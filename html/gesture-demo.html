@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gesture Demo</title>
+<style>
+  :root{--bg:#0b0e11;--panel:#161a1f;--panel2:#0f1317;--line:#2b323b;--txt:#fff;--dim:#9aa3ad;--dim2:#6b7480;--green:#58CC02;--ok:#9CE26A;--warn:#FFB74D;--red:#E5484D;--yellow:#FFD54A;}
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;flex-direction:column;overflow:hidden;font-size:13px;}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin:0 0 8px;}
+  b{color:#fff;}
+  button{padding:9px 16px;border:none;border-radius:10px;background:var(--green);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;}
+  button:disabled{opacity:.5;cursor:default;}
+  .btn-secondary{padding:7px 12px;border-radius:8px;background:var(--line);color:#cfd6dd;font-weight:600;font-size:12px;}
+  .btn-secondary:hover{background:#363e48;}
+  .btn-secondary.copied{background:#1f4d1a;color:var(--ok);}
+  input[type=text],select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:#fff;font-size:13px;font-family:inherit;}
+
+  /* ---------- top bar ---------- */
+  .top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);flex:0 0 auto;}
+  .top h1{font-size:16px;margin:0;white-space:nowrap;}
+  .chips{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
+  .chip{padding:4px 10px;border-radius:99px;background:var(--panel);color:var(--dim);font-size:12px;white-space:nowrap;}
+  .chip b{margin-left:4px;} .chip.on{color:var(--ok);} .chip.on b{color:var(--ok);}
+
+  /* ---------- two columns ---------- */
+  .app{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(400px,40vw,560px);gap:14px;padding:14px 16px;}
+  .left{min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .stage{position:relative;aspect-ratio:4/3;width:min(100%,calc((100vh - 130px) * 4 / 3));border-radius:16px;overflow:hidden;background:#000;flex:0 0 auto;}
+  video,canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+  video{transform:scaleX(-1);} canvas{transform:scaleX(-1);}
+  .readout{display:flex;align-items:baseline;gap:14px;min-height:46px;}
+  .src{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:0 0 auto;}
+  .src button{border-radius:0;background:var(--panel2);color:var(--dim);padding:7px 12px;font-size:12px;font-weight:700;}
+  .src button.on{background:var(--green);color:#fff;}
+  .emo-note{font-size:12px;color:var(--dim);margin-top:6px;}
+  .result{font-size:34px;font-weight:800;line-height:1.1;}
+  .conf{color:var(--dim);font-size:13px;}
+  .big-start{padding:14px 28px;font-size:16px;}
+  .stage-start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--dim);z-index:4;background:rgba(0,0,0,.55);}
+  .stage-start.hide{display:none;}
+
+  /* ---------- right column: tabs ---------- */
+  .right{min-height:0;display:flex;flex-direction:column;background:var(--panel);border-radius:14px;overflow:hidden;}
+  .tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto;}
+  .tab{flex:1;white-space:nowrap;padding:11px 4px;font-size:12px !important;border-radius:0;background:transparent;color:var(--dim);font-size:13px;font-weight:700;border-bottom:3px solid transparent;}
+  .tab:hover{color:#fff;}
+  .tab.active{color:#fff;border-bottom-color:var(--green);}
+  .tab .badge{display:inline-block;min-width:18px;margin-left:5px;padding:1px 6px;border-radius:99px;background:var(--line);color:#cfd6dd;font-size:11px;}
+  .tab .badge.ok{background:#1f4d1a;color:var(--ok);}
+  .pane{display:none;flex:1;min-height:0;overflow:auto;padding:14px 16px;}
+  .pane.active{display:block;}
+  .pane.flexcol.active{display:flex;flex-direction:column;}
+  .card{background:var(--panel2);border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+  .hint{font-size:11px;color:var(--dim2);line-height:1.5;margin-top:8px;}
+  .kbd{display:inline-block;padding:0 6px;border:1px solid var(--line);border-radius:5px;font-size:11px;color:#cfd6dd;}
+
+  /* ---------- letters ---------- */
+  .debug-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;font-family:ui-monospace,monospace;}
+  .debug-row .name{color:#fff;} .debug-row .score{color:var(--green);}
+  .debug-row.below-threshold .score{color:#FF6B6B;}
+
+  /* ---------- hands ---------- */
+  .th-big{font-size:18px;font-weight:800;margin-bottom:6px;}
+  .th-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:3px 0;font-family:ui-monospace,monospace;color:#cfd6dd;}
+  .th-row .k{color:var(--dim);}
+  .th-check{font-size:13px;padding:5px 0;} .th-check.pass{color:var(--ok);} .th-check.wait{color:var(--dim);}
+  .th-hand{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--bg);font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;}
+  .th-hand b{font-size:13px;}
+  .th-hand.h1{border-left:4px solid #58CC02;} .th-hand.h2{border-left:4px solid #FF9600;} .th-hand.h3{border-left:4px solid #B07CFF;}
+  .th-hand.coast{opacity:.55;}
+  .th-btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+  .th-verdict{font-size:12px;color:#cfd6dd;line-height:1.5;margin-top:6px;}
+  .th-verdict.bad{color:var(--warn);} .th-verdict.good{color:var(--ok);}
+  details.more>summary{cursor:pointer;color:var(--dim);font-size:12px;padding:4px 0;} details.more[open]>summary{margin-bottom:6px;}
+
+  /* ---------- zones ---------- */
+  .gz-hint{font-size:12px;color:var(--dim);line-height:1.5;margin:8px 0;}
+  .gz-zone{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:12px;padding:4px 0;color:#cfd6dd;}
+  .gz-zone.met{color:var(--ok);} .gz-zone.in{color:var(--yellow);}
+  .gz-result{margin-top:8px;font-size:16px;font-weight:800;}
+  .gz-result.pass{color:var(--ok);} .gz-result.wait{color:var(--dim);}
+
+  /* ---------- recorder ---------- */
+  .rec-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:5;}
+  .rec-overlay.show{display:flex;}
+  .rec-float{display:none;}
+  .rec-num{font-size:150px;font-weight:900;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.8),0 0 6px #000;line-height:1;}
+  .rec-msg{margin-top:8px;font-size:22px;font-weight:800;color:#fff;text-shadow:0 2px 14px #000;text-align:center;padding:0 16px;}
+  .rec-top{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .rec-top select{flex:1;}
+  .rec-prog{font-size:12px;color:var(--dim);white-space:nowrap;}
+  .rec-prog b{color:var(--ok);}
+  .frames{display:flex;gap:8px;margin:6px 0 10px;align-items:center;flex-wrap:wrap;}
+  .fr{padding:7px 14px;background:var(--panel2);border:1px solid var(--line);color:#cfd6dd;font-size:13px;}
+  .fr.sel{border-color:var(--green);color:#fff;background:#1d2a14;}
+  .fr.done::after{content:' ✓';color:var(--ok);}
+  .frames .lab{font-size:12px;color:var(--dim);}
+  .rec-fields{display:grid;grid-template-columns:1.3fr .7fr;gap:8px;}
+  .rec-fields label,.rec-more label{display:block;font-size:11px;color:var(--dim);margin:2px 0 3px;}
+  .rec-more{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .rec-go{width:100%;margin-top:10px;padding:13px;border-radius:10px;background:var(--red);color:#fff;font-weight:800;font-size:16px;}
+  .rec-gorow{display:flex;gap:8px;align-items:stretch;} .rec-gorow .rec-go{flex:1;width:auto;} .rec-gorow .btn-secondary{margin-top:10px;padding:0 16px;font-size:14px;}
+  .rec-go.paused{background:var(--green);color:#fff;}
+  .rec-go:hover{background:#f05a5f;} .rec-go.counting{background:var(--line);color:#cfd6dd;}
+  .rec-status{font-size:12px;line-height:1.5;margin-top:8px;color:#cfd6dd;min-height:18px;}
+  .rec-status.good{color:var(--ok);} .rec-status.bad{color:var(--warn);}
+  .rec-listwrap{flex:1;min-height:90px;overflow:auto;margin-top:6px;border-top:1px solid var(--line);}
+  .rec-item{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--panel2);font-size:12px;line-height:1.5;}
+  .rec-item .t{font-weight:800;font-size:13px;} .rec-item .m{color:var(--dim);font-family:ui-monospace,monospace;}
+  .rec-item .w{color:var(--warn);} .rec-item .b{display:flex;gap:6px;margin-top:6px;}
+  .rec-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+  .rec-bar .sp{flex:1;font-size:11px;color:var(--dim2);}
+  #rec-fallback{width:100%;height:90px;margin-top:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:#cfd6dd;font-family:ui-monospace,monospace;font-size:11px;padding:8px;display:none;}
+
+
+  /* ---------- emotions tab (recorded-pose matching) ---------- */
+  .emo-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .emo-top .grow{flex:1;font-size:12px;color:var(--dim);min-width:140px;}
+  .emo-msg{font-size:13px;margin-bottom:8px;min-height:18px;color:#cfd6dd;} .emo-msg.good{color:var(--ok);} .emo-msg.bad{color:var(--warn);}
+  .emo-grid{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed;}
+  .emo-grid th{font-size:11px;color:var(--dim);font-weight:600;text-align:center;padding:0 0 2px;}
+  .emo-grid td.sg{width:34%;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .emo-grid td.sg small{color:var(--dim);font-weight:400;margin-left:4px;}
+  .emo-cell{position:relative;text-align:center;padding:7px 0;border-radius:8px;background:var(--bg);font-family:ui-monospace,monospace;font-size:13px;color:#cfd6dd;overflow:hidden;}
+  .emo-cell i{position:absolute;left:0;top:0;bottom:0;background:#26313b;z-index:0;} .emo-cell span{position:relative;z-index:1;}
+  .emo-cell.hit{color:var(--ok);} .emo-cell.hit i{background:#1f4d1a;}
+  .emo-cell.blk{color:var(--warn);} .emo-cell.blk i{background:#4a3a1a;}
+  .emo-cell.best{outline:2px solid var(--yellow);}
+  .emo-stages{display:flex;gap:8px;margin:8px 0;align-items:center;flex-wrap:wrap;}
+  .emo-st{padding:6px 14px;border-radius:99px;background:var(--bg);color:var(--dim);font-weight:700;border:1px solid var(--line);}
+  .emo-st.now{border-color:var(--yellow);color:#fff;} .emo-st.ok{border-color:var(--green);color:var(--ok);background:#1d2a14;}
+  .emo-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;margin-top:6px;}
+  .emo-part{background:var(--bg);border-radius:8px;padding:6px 8px;font-size:11px;color:var(--dim);} .emo-part b{display:block;font-size:15px;color:#fff;font-family:ui-monospace,monospace;}
+  .emo-sep{font-family:ui-monospace,monospace;font-size:12px;display:flex;justify-content:space-between;padding:2px 0;color:#cfd6dd;} .emo-sep.warn{color:var(--warn);}
+  .emo-row{display:flex;gap:8px;align-items:center;} .emo-row select{flex:1;} .emo-row input[type=range]{flex:1;}
+
+  /* ---------- small screens: stack, page scrolls ---------- */
+  @media (max-width:900px){
+    body{overflow:auto;display:block;height:auto;}
+    html{height:auto;}
+    .top{flex-wrap:wrap;}
+    .app{display:block;padding:10px;}
+    .stage{width:100%;}
+    .left{margin-bottom:12px;}
+    .right{min-height:70vh;}
+    .rec-float{display:block;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(0,0,0,.88);border:2px solid var(--red);border-radius:18px;padding:6px 22px 8px;text-align:center;pointer-events:none;}
+    .rec-float:not(.show){display:none;}
+    .rec-float .n{font-size:44px;font-weight:900;line-height:1.1;} .rec-float .l{font-size:12px;font-weight:700;color:#cfd6dd;}
+  }
+</style>
+</head>
+<body>
+
+<div class="rec-float" id="rec-float"><div class="n" id="rec-float-n"></div><div class="l" id="rec-float-l"></div></div>
+
+<header class="top">
+  <h1>🤟 Gesture Demo</h1>
+  <div class="chips">
+    <span class="chip" id="chip-cam">Camera<b>off</b></span>
+    <span class="chip" id="chip-hands">Hands<b>0</b></span>
+    <span class="chip" id="chip-rec">Poses saved<b>0</b></span>
+    <label class="chip" id="chip-face" style="cursor:pointer" title="Face model for the chin / forehead check (mother, father). Loads after the camera starts."><input type="checkbox" id="face-on" checked style="margin-right:5px;vertical-align:-2px">Face tracking<b id="face-state">off</b></label>
+  </div>
+  <button class="btn-secondary" id="copy-debug-btn">Copy debug report</button>
+</header>
+
+<main class="app">
+  <section class="left">
+    <div class="stage" id="stage">
+      <video id="gesture-video" autoplay playsinline muted></video>
+      <canvas id="gesture-canvas"></canvas>
+      <canvas id="face-canvas" style="pointer-events:none"></canvas>
+      <div class="stage-start" id="stage-start">
+        <button class="big-start" id="start-btn">Start Camera</button>
+        <div>Allow the webcam, then show your hands</div>
+      </div>
+      <div class="rec-overlay" id="rec-overlay"><div class="rec-num" id="rec-num"></div><div class="rec-msg" id="rec-msg"></div></div>
+    </div>
+  </section>
+
+  <section class="right">
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="letters">1 · Letters</button>
+      <button class="tab" data-tab="hands">2 · Hands <span class="badge" id="tab-hands-badge">0</span></button>
+      <button class="tab" data-tab="zones">3 · Zones <span class="badge" id="tab-zones-badge" style="display:none"></span></button>
+      <button class="tab" data-tab="rec">4 · Recorder <span class="badge" id="tab-rec-badge">0</span></button>
+      <button class="tab" data-tab="emo">5 · Testing poses <span class="badge" id="tab-emo-badge" style="display:none"></span></button>
+    </nav>
+
+    <!-- ===== Letters ===== -->
+    <div class="pane active" data-pane="letters">
+      <div class="card">
+        <h2>Detected letter</h2>
+        <div class="readout"><div class="result" id="result">—</div><div class="conf" id="conf"></div></div>
+      </div>
+      <div class="card">
+        <h2>Live scores</h2>
+        <div id="debug-list"><div class="debug-row"><span class="name">—</span></div></div>
+        <div class="hint">Top 5 raw Fingerpose scores per frame. Red = below the 8.0 confidence threshold. Model: MediaPipe Hands (full), 10 consecutive frames confirm a letter. The big letter above follows one hand.</div>
+      </div>
+      <div class="card">
+        <h2>Motion (J / Z)</h2>
+        <div id="motion-debug-list"><div class="debug-row"><span class="name">— (hold the I or pointing shape, then start the stroke)</span></div></div>
+        <div class="hint">restingOk = the resting-shape check passed. matched = the stroke itself matched.</div>
+      </div>
+    </div>
+
+    <!-- ===== Hands ===== -->
+    <div class="pane" data-pane="hands" id="twohand-panel">
+      <div class="card">
+        <h2>Two-hand tracking test</h2>
+        <div class="th-big" id="th-big">Start the camera, then show both hands.</div>
+        <div class="th-check wait" id="th-check-two">☐ Two hands seen continuously for 1.5 s</div>
+        <div class="th-row"><span class="k">hands now (raw model output)</span><span id="th-raw">–</span></div>
+        <div class="th-row"><span class="k">tracked ids now</span><span id="th-tracked">–</span></div>
+        <div class="th-row"><span class="k">gap between hands (hand sizes)</span><span id="th-gap">–</span></div>
+        <div class="th-row"><span class="k">hands overlapping (tracker)</span><span id="th-overlap">–</span></div>
+        <div id="th-hands"></div>
+        <details class="more"><summary>More counters</summary>
+          <div class="th-row"><span class="k">max hands seen at once</span><span id="th-max">0</span></div>
+          <div class="th-row"><span class="k">frames with 0 / 1 / 2 / 3+ hands</span><span id="th-frames">0 / 0 / 0 / 0</span></div>
+          <div class="th-row"><span class="k">tracker: dup skeletons rejected / strays</span><span id="th-dups">0 / 0</span></div>
+        </details>
+        <div class="hint">Colours: hand #1 green, #2 orange, #3 purple. Faded = lost this frame and held by the tracker. Ids should stay with the same physical hand when the hands cross or touch.</div>
+        <div class="th-btns"><button class="btn-secondary" id="th-reset">Reset counters</button></div>
+      </div>
+      <div class="card">
+        <h2>Left / right check</h2>
+        <div class="th-verdict">Show <b>only one hand</b>, palm toward the camera, then press the matching button. It reports whether the model's Left/Right label matches your real hand.</div>
+        <div class="th-btns">
+          <button class="btn-secondary" id="th-test-right">I'm showing my RIGHT hand</button>
+          <button class="btn-secondary" id="th-test-left">I'm showing my LEFT hand</button>
+        </div>
+        <div class="th-verdict" id="th-hs-status">Not tested yet.</div>
+      </div>
+    </div>
+
+    <!-- ===== Zones ===== -->
+    <div class="pane" data-pane="zones" id="zones-panel">
+      <div class="card">
+        <h2>Guide zones (region test)</h2>
+        <select id="gz-preset"><option value="">Off</option></select>
+        <div class="gz-hint" id="gz-hint">Pick a layout. Boxes are drawn on the camera view; put a MIDDLE fingertip inside each one and hold it.</div>
+        <div id="gz-zones"></div>
+        <div class="gz-result wait" id="gz-result">–</div>
+        <div class="hint">Zones are fixed positions on the screen (no face tracking): the dashed oval is a head guide. Box colour: blue = empty, yellow = fingertip inside, green = held long enough. Two-box layouts need two different hands.</div>
+      </div>
+    </div>
+
+    <!-- ===== Recorder ===== -->
+    <div class="pane flexcol" data-pane="rec" id="recorder-panel">
+      <div class="rec-top">
+        <select id="rec-sign" title="Pick the sign to record"></select>
+        <span class="rec-prog" id="rec-prog"></span>
+      </div>
+      <div class="frames" id="rec-frames"></div>
+      <div class="rec-fields">
+        <div><label for="rec-name">Pose name (filled in for you)</label><input type="text" id="rec-name" placeholder="happy_1" autocomplete="off"></div>
+        <div><label for="rec-hands">Hands</label><select id="rec-hands"><option value="1">1 hand</option><option value="2">2 hands</option></select></div>
+      </div>
+      <div class="rec-more">
+        <div><label for="rec-signer">Who is signing</label><input type="text" id="rec-signer" placeholder="e.g. Deaf signer 1" autocomplete="off"></div>
+        <div><label for="rec-notes">Notes</label><input type="text" id="rec-notes" placeholder="e.g. other hand, slower" autocomplete="off"></div>
+      </div>
+      <label style="display:flex;gap:6px;align-items:center;margin-top:8px;color:var(--dim);font-size:12px"><input type="checkbox" id="rec-auto" checked> After saving, jump to the next pose</label>
+      <div class="rec-gorow"><button class="rec-go" id="rec-go">● Record pose (5 s countdown)</button><button class="btn-secondary" id="rec-stop" style="display:none">■ Stop</button></div>
+      <div class="rec-status" id="rec-status">Pick a sign, get into position. For a sign with several frames the frames are taken one after another (5 s before the first, 3 s before the others). Click the button again to pause. Shortcut: press <span class="kbd">R</span>.</div>
+      <div class="rec-listwrap"><div id="rec-list"></div></div>
+      <div class="rec-bar">
+        <button class="btn-secondary" id="rec-copy-all">Copy all</button>
+        <button class="btn-secondary" id="rec-download">Download .json</button>
+        <label class="btn-secondary" style="cursor:pointer" title="Add the poses of an exported file to this recording">Import file…<input type="file" id="rec-import" accept=".json,application/json" style="display:none"></label>
+        <button class="btn-secondary" id="rec-clear">Clear all</button>
+        <span class="sp" id="rec-size">Nothing saved yet.</span>
+      </div>
+      <textarea id="rec-fallback" readonly></textarea>
+      <div class="hint">One snapshot of everything the tracker reports (landmarks, bends, ids, labels, zones). No video is saved. Poses stay in this browser until cleared. Send the downloaded file and say which unit it is.</div>
+    </div>
+
+    <!-- ===== Testing poses (matches the camera against recorded poses) ===== -->
+    <div class="pane" data-pane="emo" id="emo-panel">
+      <div class="card">
+        <div class="emo-top">
+          <div class="src" id="emo-src" title="Where the poses to test against come from">
+            <button type="button" data-src="rec">Current record</button>
+            <button type="button" data-src="file">From file</button>
+          </div>
+          <label class="btn-secondary" id="emo-load-lbl" style="cursor:pointer">Load poses file…<input type="file" id="emo-load" accept=".json,application/json" style="display:none"></label>
+        </div>
+        <div class="emo-note" id="emo-file">Loading assets/poses/all-signs.json …</div>
+      </div>
+      <div class="card">
+        <h2>Live match (% similarity to each recorded pose)</h2>
+        <div class="emo-msg" id="emo-msg">Start the camera and show both hands.</div>
+        <table class="emo-grid" id="emo-grid"></table>
+        <div class="hint">Yellow box = the closest recorded pose right now. Green = at or above the pass level below. Each number mixes handshape, palm direction, hand layout and screen position.</div>
+      </div>
+      <div class="card">
+        <h2>Try a sign</h2>
+        <div class="emo-row"><select id="emo-sign"></select><span style="font-size:12px;color:var(--dim)">pass level <b id="emo-thr-v">75</b>%</span><input type="range" id="emo-thr" min="50" max="95" value="75"></div>
+        <div class="emo-stages" id="emo-stages"></div>
+        <div class="emo-parts" id="emo-parts"></div>
+        <div class="hint" id="emo-hint"></div>
+      </div>
+      <details class="card more" id="emo-sepbox"><summary id="emo-sepsum">Separation check (recorded poses against each other)</summary>
+        <div id="emo-sep"></div>
+        <div class="hint">For each recorded pose: the most similar pose from a DIFFERENT sign. High numbers (amber) mean those two signs look alike to the camera, so a check could confuse them.</div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<!-- TensorFlow.js + MediaPipe Hands (hand-pose-detection) + Fingerpose -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fingerpose@0.1.0/dist/fingerpose.min.js"></script>
+<!-- face model (chin / forehead zones for mother and father) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
+<script src="../js/gestures/gesture-detection.js?v=8"></script>
+<script src="../js/gestures/asl-alphabet.js"></script>
+<script src="../js/gestures/pose-match.js"></script>
+<script src="../js/gestures/face-tracker.js"></script>
+<script src="../js/app/lessons.js"></script><!-- data only: SIGNS table for the recorder sign picker -->
+
+<script>
+  // =============================================================
+  // DOM REFERENCES
+  // =============================================================
+  const startBtn = document.getElementById('start-btn');
+  const copyBtn  = document.getElementById('copy-debug-btn');
+  const resultEl = document.getElementById('result');
+  const confEl   = document.getElementById('conf');
+  const debugList       = document.getElementById('debug-list');
+  const motionDebugList = document.getElementById('motion-debug-list');
+
+  // Mirrors GestureDetector's own default — used only for colouring the debug panel.
+  const MIN_CONFIDENCE = 8.0;
+
+  // =============================================================
+  // GESTURE LABELS
+  // =============================================================
+  const GESTURE_LABELS = {
+    asl_a: 'A', asl_b: 'B', asl_c: 'C', asl_d: 'D', asl_e: 'E',
+    asl_f: 'F', asl_g: 'G', asl_h: 'H', asl_i: 'I', asl_j: 'J',
+    asl_k: 'K', asl_l: 'L', asl_m: 'M', asl_n: 'N', asl_o: 'O',
+    asl_p: 'P', asl_q: 'Q', asl_r: 'R', asl_s: 'S', asl_t: 'T',
+    asl_u: 'U', asl_v: 'V', asl_w: 'W', asl_x: 'X', asl_y: 'Y', asl_z: 'Z',
+  };
+
+  // J and Z are motion-only: they never appear from the static Fingerpose
+  // pipeline. Only the motion detector completing a stroke produces a J/Z result.
+  const MOTION_LETTERS = new Set(['asl_j', 'asl_z']);
+
+  // =============================================================
+  // MOTION DISPLAY STATE
+  // =============================================================
+
+  // Per-gesture motion state, updated by onMotionState every frame.
+  const motionState = {}; // { [name]: { restingOk, motionMatched } }
+
+  // When the most recent motion gesture fired, so refreshResult()'s stale-clear
+  // guard knows not to wipe a freshly shown J/Z result during the display window.
+  // Set when a motion gesture fires (confidence=10); expires after _motionFreezeMs=1500ms.
+  let motionDisplayUntil = 0; // DOMHighResTimeStamp; 0 = not in a motion display window
+
+  // When the resting pose was first seen for each motion letter, used to
+  // delay the "waiting for motion" prompt until 1s of continuous resting.
+  const motionRestingStart = {}; // { [name]: DOMHighResTimeStamp }
+
+  // Which motion letter (if any) is currently prompting "waiting for motion".
+  let waitingForMotion = null; // 'asl_j' | 'asl_z' | null
+
+  const MOTION_WAITING_LABELS = {
+    asl_j: 'waiting for J motion',
+    asl_z: 'waiting for Z motion',
+  };
+
+  // How long the resting pose must be held continuously before the waiting prompt appears.
+  // Matches the J/Z resting hold (500 ms) and
+  // GESTURE_MOTION_RESTING_HOLD_MS (app.js) — same 0.5s hold requirement
+  // used everywhere J/Z motion detection appears, so behavior is consistent
+  // across the demo, the translator, and the lessons gesture quiz.
+  const MOTION_RESTING_DELAY_MS = 500;
+
+  // =============================================================
+  // RESULT DISPLAY
+  // =============================================================
+
+  /**
+   * Refreshes the on-screen result display.
+   *
+   * Priority order:
+   *   1. "waiting for J/Z motion" prompt while resting pose is held.
+   *   2. Stale-clear: if a motion letter is in latestResultName but the
+   *      display window has already expired, wipe it rather than re-showing it.
+   *   3. Normal static result from latestResultName.
+   */
+  function refreshResult() {
+    if (waitingForMotion) {
+      resultEl.textContent = MOTION_WAITING_LABELS[waitingForMotion];
+      confEl.textContent = '';
+      return;
+    }
+    if (latestResultName == null) return;
+
+    // A motion letter cached in latestResultName is only valid while inside
+    // the display window. Once expired, clear it so the resting pose re-entering
+    // the frame doesn't re-display "Z" without a fresh stroke.
+    if (MOTION_LETTERS.has(latestResultName) && performance.now() > motionDisplayUntil) {
+      latestResultName = null;
+      latestConfidence = null;
+      resultEl.textContent = '—';
+      confEl.textContent = '';
+      return;
+    }
+
+    resultEl.textContent = GESTURE_LABELS[latestResultName] || latestResultName;
+    if (latestConfidence != null) confEl.textContent = 'confidence: ' + latestConfidence.toFixed(1) + ' / 10';
+  }
+
+  /**
+   * Re-evaluates which motion letter (if any) should be showing the
+   * "waiting for motion" prompt and calls refreshResult() on any change.
+   * Called from onMotionState every frame, except when a stroke just matched
+   * (see onMotionState — skipped to avoid pre-empting onGesture's own clear).
+   */
+  function updateWaitingState() {
+    const now = performance.now();
+    let newWaiting = null;
+
+    for (const name of MOTION_LETTERS) {
+      const state = motionState[name];
+      if (state && state.restingOk && !state.motionMatched) {
+        const restingStart = motionRestingStart[name];
+        if (restingStart !== undefined && now - restingStart >= MOTION_RESTING_DELAY_MS) {
+          // Suppress J's prompt when the static pipeline has already confirmed I —
+          // the user is signing I as a letter, not preparing a J stroke.
+          if (name === 'asl_j' && latestResultName === 'asl_i') continue;
+          // Suppress Z's prompt when the static pipeline shows any confirmed letter
+          // other than D (the tie-breaker result for a true Z resting shape).
+          // G, Q, L, X all share "one finger extended" geometry with Z's resting pose.
+          if (name === 'asl_z' && latestResultName !== null && latestResultName !== 'asl_d') continue;
+
+          newWaiting = name;
+          break;
+        }
+      }
+    }
+
+    if (newWaiting !== waitingForMotion) {
+      waitingForMotion = newWaiting;
+      refreshResult();
+    }
+  }
+
+  // =============================================================
+  // DEBUG STATE (retained for the copy-report button)
+  // =============================================================
+  let latestScores      = [];   // full sorted list from onDebugScores
+  let latestResultName  = null; // last confirmed gesture name, or null
+  let latestConfidence  = null;
+  let latestLandmarks   = null; // raw 21-point [x,y,z] array from onLandmarks, or null
+  let latestMotionDebug = [];   // full array from onDebugMotion
+
+  // =============================================================
+  // LANDMARK INDICES & GEOMETRY HELPERS (for the debug report)
+  // =============================================================
+
+  // Standard Handpose/MediaPipe layout — matches asl-alphabet.js constants.
+  const WRIST = 0, THUMB_CMC = 1, THUMB_TIP = 4;
+  const INDEX_MCP = 5, INDEX_PIP = 6, INDEX_TIP = 8;
+  const MIDDLE_MCP = 9, MIDDLE_PIP = 10, MIDDLE_TIP = 12;
+  const RING_MCP = 13, RING_PIP = 14, RING_TIP = 16;
+  const PINKY_MCP = 17, PINKY_TIP = 20;
+
+  // Vector math — mirrors the geometry used inside asl-alphabet.js so
+  // the debug report shows the exact same numbers driving real decisions.
+  function vSub(a, b) { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+  function vDot(a, b) { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+  function vLen(a) { return Math.sqrt(vDot(a, a)) || 1e-6; }
+  function vAngleDeg(a, b) {
+    const cos = Math.max(-1, Math.min(1, vDot(a, b) / (vLen(a) * vLen(b))));
+    return Math.acos(cos) * (180 / Math.PI);
+  }
+
+  /** Wrist-to-middle-MCP distance; normalises all other measurements. */
+  function palmSize(lm) { return vLen(vSub(lm[MIDDLE_MCP], lm[WRIST])); }
+
+  /** How far a fingertip reaches from its base knuckle, relative to palm size. */
+  function fingerReach(lm, mcp, tip) { return vLen(vSub(lm[tip], lm[mcp])) / palmSize(lm); }
+
+  /** How straight an extended finger is (1.0 = perfectly straight). */
+  function fingerStraightness(lm, mcp, pip, tip) {
+    const mcpToTip = vLen(vSub(lm[tip], lm[mcp]));
+    const mcpToPip = vLen(vSub(lm[pip], lm[mcp]));
+    const pipToTip = vLen(vSub(lm[tip], lm[pip]));
+    return mcpToTip / ((mcpToPip + pipToTip) || 1e-6);
+  }
+
+  /** Angle between two fingers' pointing directions, in degrees. */
+  function fingerSpreadDeg(lm, mcpA, tipA, mcpB, tipB) {
+    return vAngleDeg(vSub(lm[tipA], lm[mcpA]), vSub(lm[tipB], lm[mcpB]));
+  }
+
+  /** Angle between the thumb's overall direction and the index finger's direction. */
+  function thumbIndexAngleDeg(lm) {
+    return vAngleDeg(vSub(lm[THUMB_TIP], lm[THUMB_CMC]), vSub(lm[INDEX_TIP], lm[INDEX_MCP]));
+  }
+
+  /**
+   * Returns true if the index fingertip points the same way as the palm's own
+   * "up" axis (wrist → middle MCP) — rotation-robust replacement for a raw
+   * camera-Y up/down comparison.
+   */
+  function indexPointsPalmUp(lm) {
+    const up = vSub(lm[MIDDLE_MCP], lm[WRIST]);
+    const indexVec = vSub(lm[INDEX_TIP], lm[INDEX_MCP]);
+    return vDot(indexVec, up) > 0;
+  }
+
+  // =============================================================
+  // DEBUG PANEL RENDERERS
+  // =============================================================
+
+  /** Renders the top-5 static Fingerpose scores, excluding motion-only J/Z. */
+  function renderDebugScores(scores) {
+    latestScores = scores;
+    const filteredScores = scores.filter((g) => !MOTION_LETTERS.has(g.name));
+    if (!filteredScores.length) {
+      debugList.innerHTML = '<div class="debug-row"><span class="name">—</span></div>';
+      return;
+    }
+    debugList.innerHTML = filteredScores.slice(0, 5).map((g) => {
+      const below = g.score < MIN_CONFIDENCE;
+      const label = GESTURE_LABELS[g.name] || g.name;
+      return '<div class="debug-row' + (below ? ' below-threshold' : '') + '">'
+        + '<span class="name">' + label + '</span>'
+        + '<span class="score">' + g.score.toFixed(2) + '</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  /**
+   * Renders the live J/Z motion detector state.
+   * Shows resting-check result, whether the stroke matched, and any detail numbers.
+   */
+  function renderDebugMotion(motionInfo) {
+    latestMotionDebug = motionInfo;
+    if (!motionInfo.length) {
+      motionDebugList.innerHTML = '<div class="debug-row"><span class="name">— (no motion detectors registered, or enableMotionGestures is off)</span></div>';
+      return;
+    }
+    motionDebugList.innerHTML = motionInfo.map((m) => {
+      const label = GESTURE_LABELS[m.name] || m.name;
+      let status;
+      if (!m.restingOk)   status = 'resting check failed';
+      else if (m.debounced) status = 'matched recently (debounced)';
+      else if (m.matched)   status = 'MATCHED';
+      else                  status = 'resting OK, watching…';
+      const detailStr = m.detail
+        ? Object.entries(m.detail).map(([k, v]) => k + '=' + v).join(', ')
+        : '';
+      return '<div class="debug-row">'
+        + '<span class="name">' + label + ': ' + status + '</span>'
+        + '</div>'
+        + (detailStr ? '<div class="debug-hint" style="margin:0 0 6px 0;">' + detailStr + '</div>' : '');
+    }).join('');
+  }
+
+  // =============================================================
+  // DEBUG REPORT BUILDER
+  // =============================================================
+
+  /**
+   * Builds a plain-text snapshot suitable for pasting into a bug report:
+   * current result, every letter's raw score (pass/fail against threshold),
+   * detector settings, and the raw hand-geometry numbers that drive
+   * the angle-based tie-breakers in asl-alphabet.js.
+   */
+  function buildDebugReport() {
+    const lines = [];
+    lines.push('Time: ' + new Date().toISOString());
+    lines.push('Face tracking: ' + (faceGateOn() ? face.status + (face.error ? ' (' + face.error + ')' : '') + ', model runs ' + face.frames + ', face found ' + face.hits + ', face now ' + (face.current() ? (face.current().live ? 'live' : 'held') : 'no') : 'off'));
+    lines.push('Displayed result: ' + (latestResultName
+      ? (GESTURE_LABELS[latestResultName] || latestResultName)
+      : '(none / no hand detected)'));
+    if (latestConfidence != null) {
+      lines.push('Confidence: ' + latestConfidence.toFixed(2) + ' / 10');
+    }
+
+    lines.push('Raw scores:');
+    if (!latestScores.length) {
+      lines.push('  (no hand currently detected)');
+    } else {
+      latestScores.forEach((g) => {
+        const label = GESTURE_LABELS[g.name] || g.name;
+        const flag = g.score < MIN_CONFIDENCE ? '*' : ' ';
+        lines.push('  ' + flag + ' ' + label.padEnd(3, ' ') + g.score.toFixed(3));
+      });
+    }
+
+    lines.push('Hand geometry (same numbers the angle-based tie-breakers use):');
+    if (!latestLandmarks) {
+      lines.push('  (no hand currently detected)');
+    } else {
+      const lm = latestLandmarks;
+      lines.push('  index reach=' + fingerReach(lm, INDEX_MCP, INDEX_TIP).toFixed(3)
+        + '  straightness=' + fingerStraightness(lm, INDEX_MCP, INDEX_PIP, INDEX_TIP).toFixed(3));
+      lines.push('  middle reach=' + fingerReach(lm, MIDDLE_MCP, MIDDLE_TIP).toFixed(3)
+        + '  straightness=' + fingerStraightness(lm, MIDDLE_MCP, MIDDLE_PIP, MIDDLE_TIP).toFixed(3));
+      lines.push('  ring reach=' + fingerReach(lm, RING_MCP, RING_TIP).toFixed(3));
+      lines.push('  pinky reach=' + fingerReach(lm, PINKY_MCP, PINKY_TIP).toFixed(3));
+      lines.push('  thumb-index angle=' + thumbIndexAngleDeg(lm).toFixed(1) + ' deg');
+      lines.push('  index-middle spread=' + fingerSpreadDeg(lm, INDEX_MCP, INDEX_TIP, MIDDLE_MCP, MIDDLE_TIP).toFixed(1) + ' deg');
+      lines.push('  index points palm-up=' + indexPointsPalmUp(lm));
+      lines.push('  thumb-to-pinky-MCP=' + (vLen(vSub(lm[THUMB_TIP], lm[PINKY_MCP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-index-PIP=' + (vLen(vSub(lm[THUMB_TIP], lm[INDEX_PIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-middle-PIP=' + (vLen(vSub(lm[THUMB_TIP], lm[MIDDLE_PIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-ring-PIP=' + (vLen(vSub(lm[THUMB_TIP], lm[RING_PIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-index-tip=' + (vLen(vSub(lm[THUMB_TIP], lm[INDEX_TIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-middle-tip=' + (vLen(vSub(lm[THUMB_TIP], lm[MIDDLE_TIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-ring-tip=' + (vLen(vSub(lm[THUMB_TIP], lm[RING_TIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-to-pinky-tip=' + (vLen(vSub(lm[THUMB_TIP], lm[PINKY_TIP])) / palmSize(lm)).toFixed(3));
+      lines.push('  thumb-tip-z-vs-knuckle-line-z=' + ((((lm[INDEX_PIP][2]+lm[MIDDLE_PIP][2]+lm[RING_PIP][2])/3) - lm[THUMB_TIP][2]) / palmSize(lm)).toFixed(3));
+
+      // Lateral crossing check — used by R's tie-breaker.
+      {
+        const midlineX = (lm[INDEX_MCP][0] + lm[MIDDLE_MCP][0]) / 2;
+        const indexSideSign = Math.sign(lm[INDEX_MCP][0] - midlineX) || -1;
+        const middleSideSign = Math.sign(lm[MIDDLE_MCP][0] - midlineX) || 1;
+        const indexCrossDist = (lm[INDEX_TIP][0] - midlineX) * indexSideSign / palmSize(lm);
+        const middleCrossDist = (lm[MIDDLE_TIP][0] - midlineX) * middleSideSign / palmSize(lm);
+        lines.push('  index-crossed-margin=' + indexCrossDist.toFixed(3) + '  middle-crossed-margin=' + middleCrossDist.toFixed(3));
+      }
+
+      // Index fingertip-to-wrist distance — distinct from index reach (which
+      // is measured from the MCP, not the wrist). Used by E vs C/O tie-breaker.
+      lines.push('  index-tip-to-wrist=' + (vLen(vSub(lm[INDEX_TIP], lm[WRIST])) / palmSize(lm)).toFixed(3));
+    }
+
+    lines.push('Motion (J/Z) debug:');
+    if (!latestMotionDebug.length) {
+      lines.push('  (no motion detector activity this frame)');
+    } else {
+      latestMotionDebug.forEach((m) => {
+        const label = GESTURE_LABELS[m.name] || m.name;
+        let status;
+        if (!m.restingOk)    status = 'resting check failed';
+        else if (m.debounced) status = 'matched recently (debounced)';
+        else if (m.matched)   status = 'MATCHED';
+        else                  status = 'resting OK, watching';
+        lines.push('  ' + label + ': ' + status + (m.detail ? '  ' + JSON.stringify(m.detail) : ''));
+      });
+    }
+
+    lines.push(...twoHandReportLines());
+    lines.push(...zonesReportLines());
+
+    return lines.join('\n');
+  }
+
+  // =============================================================
+  // COPY DEBUG REPORT
+  // =============================================================
+
+  async function copyDebugReport() {
+    const report = buildDebugReport();
+    try {
+      await navigator.clipboard.writeText(report);
+    } catch (err) {
+      // Clipboard API unavailable (no permission, non-HTTPS, etc.) —
+      // fall back to a hidden textarea so the data is never silently lost.
+      const ta = document.createElement('textarea');
+      ta.value = report;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) { /* nothing more we can do */ }
+      document.body.removeChild(ta);
+    }
+    copyBtn.textContent = 'Copied!';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'Copy debug report';
+      copyBtn.classList.remove('copied');
+    }, 1500);
+  }
+
+  copyBtn.addEventListener('click', copyDebugReport);
+
+  // =============================================================
+  // TWO-HAND TRACKING TEST
+  // =============================================================
+  const thEl = {
+    big: document.getElementById('th-big'), checkTwo: document.getElementById('th-check-two'),
+    raw: document.getElementById('th-raw'), tracked: document.getElementById('th-tracked'),
+    max: document.getElementById('th-max'), frames: document.getElementById('th-frames'),
+    gap: document.getElementById('th-gap'), overlap: document.getElementById('th-overlap'),
+    dups: document.getElementById('th-dups'), hands: document.getElementById('th-hands'),
+    hsStatus: document.getElementById('th-hs-status'),
+  };
+  const TWO_HAND_HOLD_MS = 1500;
+  const HS_TEST_MS = 2500;
+  let detectorRef = null;          // set once the detector exists (for tracker stats in the report)
+  let latestTracked = null;        // last onHands result
+  let lastThRender = 0;
+  const th = {
+    frames: [0, 0, 0, 0],          // frames with 0 / 1 / 2 / 3+ raw hands
+    maxSeen: 0,
+    twoSince: null, twoPassed: false, twoBestMs: 0,
+    hsTest: null,                  // active test: { user, until, counts:{Left,Right}, frames }
+    hsResults: {},                 // { Right: {label, counts, swapped}, Left: {...} }
+  };
+
+  function resetTwoHandCounters() {
+    th.frames = [0, 0, 0, 0]; th.maxSeen = 0;
+    th.twoSince = null; th.twoPassed = false; th.twoBestMs = 0;
+    if (detectorRef && detectorRef.tracker) detectorRef.tracker.reset();
+    thEl.checkTwo.className = 'th-check wait';
+    thEl.checkTwo.textContent = '☐ Two hands seen continuously for 1.5 s';
+  }
+
+  // Which side of the MIRRORED display (what the user sees) a hand is on.
+  function displaySide(centreX) {
+    const w = document.getElementById('gesture-video').videoWidth || 640;
+    return centreX > w / 2 ? 'left' : 'right'; // raw frame is not mirrored; the display is
+  }
+
+  function startHandednessTest(user) {
+    th.hsTest = { user, until: performance.now() + HS_TEST_MS, counts: { Left: 0, Right: 0 }, frames: 0 };
+    thEl.hsStatus.className = 'th-verdict';
+    thEl.hsStatus.textContent = 'Testing… keep ONE ' + user.toUpperCase() + ' hand in view for ' + (HS_TEST_MS / 1000) + ' s.';
+  }
+
+  function finishHandednessTest() {
+    const t = th.hsTest; th.hsTest = null;
+    const total = t.counts.Left + t.counts.Right;
+    if (total < 10) {
+      thEl.hsStatus.className = 'th-verdict bad';
+      thEl.hsStatus.textContent = 'Not enough frames with exactly one hand (' + total + '). Try again with only one hand in view.';
+      return;
+    }
+    const label = t.counts.Left >= t.counts.Right ? 'Left' : 'Right';
+    th.hsResults[t.user] = { label, counts: { ...t.counts }, swapped: label !== t.user };
+    renderHandednessVerdict();
+  }
+
+  function renderHandednessVerdict() {
+    const r = th.hsResults, parts = [];
+    for (const user of ['Right', 'Left']) {
+      if (!r[user]) continue;
+      parts.push('Showed ' + user.toUpperCase() + ' → model said "' + r[user].label + '" (Left ' + r[user].counts.Left + ' / Right ' + r[user].counts.Right + ' frames)');
+    }
+    const all = Object.values(r);
+    let verdict = '';
+    if (all.length && all.every((x) => x.swapped)) verdict = 'RESULT: labels are SWAPPED — model "Left" = the person\'s RIGHT hand (and vice versa). Flip the label before using it.';
+    else if (all.length && all.every((x) => !x.swapped)) verdict = 'RESULT: labels MATCH the real hand — model "Left" = the person\'s left hand.' + (all.length < 2 ? ' (Test the other hand too to be sure.)' : '');
+    else verdict = 'RESULT: inconclusive — the two tests disagree. Retry both with only one hand in view.';
+    thEl.hsStatus.className = 'th-verdict ' + (verdict.includes('inconclusive') ? 'bad' : 'good');
+    thEl.hsStatus.innerHTML = parts.join('<br>') + '<br><b>' + verdict + '</b>';
+  }
+
+  function handednessSummaryText() {
+    const r = th.hsResults;
+    if (!r.Right && !r.Left) return 'not tested';
+    const bits = [];
+    for (const user of ['Right', 'Left']) if (r[user]) bits.push('showed ' + user + ' → model "' + r[user].label + '" (' + r[user].counts.Left + 'L/' + r[user].counts.Right + 'R frames)' + (r[user].swapped ? ' SWAPPED' : ' matches'));
+    return bits.join('; ');
+  }
+
+  function onHandsFrame(result) {
+    const now = performance.now();
+    latestTracked = result;
+    latestTrackedAt = now;
+    const n = result.rawCount;
+    th.frames[Math.min(n, 3)]++;
+    th.maxSeen = Math.max(th.maxSeen, n);
+
+    // "two hands for 1.5 s" check — raw model count, so it also tells us the model really returns 2.
+    if (n >= 2) {
+      if (th.twoSince == null) th.twoSince = now;
+      const held = now - th.twoSince;
+      th.twoBestMs = Math.max(th.twoBestMs, held);
+      if (held >= TWO_HAND_HOLD_MS) th.twoPassed = true;
+    } else {
+      th.twoSince = null;
+    }
+
+    // Handedness test: only count frames with exactly one live hand.
+    if (th.hsTest) {
+      const live = result.hands.filter((h) => !h.coasting);
+      if (result.rawCount === 1 && live.length === 1 && live[0].handedness) {
+        th.hsTest.counts[live[0].handedness]++; th.hsTest.frames++;
+      }
+      if (now >= th.hsTest.until) finishHandednessTest();
+    }
+
+    if (now - lastThRender < 90) return; // ~11 fps is plenty for text
+    lastThRender = now;
+    renderTwoHandPanel(result, now);
+  }
+
+  function renderTwoHandPanel(result, now) {
+    const n = result.rawCount, tr = result.hands;
+    thEl.big.textContent = n === 0 ? 'No hands' : n === 1 ? '1 hand' : n + ' hands';
+    thEl.big.style.color = n >= 2 ? '#9CE26A' : '#fff';
+    thEl.raw.textContent = n;
+    thEl.tracked.textContent = tr.length ? tr.map((h) => '#' + h.id + (h.coasting ? '(held)' : '')).join('  ') : '–';
+    thEl.max.textContent = th.maxSeen;
+    thEl.frames.textContent = th.frames.join(' / ');
+    thEl.overlap.textContent = tr.length >= 2 ? (result.overlap ? 'YES' : 'no') : '–';
+    const st = detectorRef && detectorRef.tracker ? detectorRef.tracker.stats : null;
+    thEl.dups.textContent = st ? st.duplicatesRejected + ' / ' + st.strayRejected : '–';
+
+    const a = tr[0], b = tr[1];
+    thEl.gap.textContent = (a && b)
+      ? (Math.hypot(a.centre.x - b.centre.x, a.centre.y - b.centre.y) / ((a.size + b.size) / 2)).toFixed(2)
+      : '–';
+
+    if (th.twoPassed) {
+      thEl.checkTwo.className = 'th-check pass';
+      thEl.checkTwo.textContent = '✅ Two hands seen continuously for 1.5 s (best run ' + (th.twoBestMs / 1000).toFixed(1) + ' s)';
+    } else if (th.twoSince != null) {
+      thEl.checkTwo.className = 'th-check wait';
+      thEl.checkTwo.textContent = '⏳ Two hands… ' + (Math.min(now - th.twoSince, TWO_HAND_HOLD_MS) / 1000).toFixed(1) + ' / 1.5 s';
+    }
+
+    if (th.hsTest) {
+      const left = Math.max(0, (th.hsTest.until - now) / 1000).toFixed(1);
+      thEl.hsStatus.textContent = 'Testing ' + th.hsTest.user.toUpperCase() + ' hand… ' + left + ' s left (frames counted: ' + th.hsTest.frames + ')';
+    }
+
+    thEl.hands.innerHTML = tr.map((h) => {
+      const letter = h.gesture ? (GESTURE_LABELS[h.gesture] || h.gesture) : '–';
+      return '<div class="th-hand h' + h.id + (h.coasting ? ' coast' : '') + '">'
+        + '<b>#' + h.id + '</b> ' + (h.coasting ? '(lost, held by tracker)' : '') + '<br>'
+        + 'model label: ' + (h.handedness || '?') + ' · seen on ' + displaySide(h.centre.x) + ' of the screen<br>'
+        + 'letter: <b>' + letter + '</b>' + (h.gesture ? ' (' + h.gestureScore.toFixed(1) + ')' : '')
+        + ' · size ' + Math.round(h.size) + 'px · alive ' + (h.ageMs / 1000).toFixed(1) + 's'
+        + '</div>';
+    }).join('');
+  }
+
+  document.getElementById('th-test-right').addEventListener('click', () => startHandednessTest('Right'));
+  document.getElementById('th-test-left').addEventListener('click', () => startHandednessTest('Left'));
+  document.getElementById('th-reset').addEventListener('click', resetTwoHandCounters);
+
+  function twoHandReportLines() {
+    const lines = ['Two-hand tracking:'];
+    lines.push('  frames with 0/1/2/3+ hands: ' + th.frames.join(' / '));
+    lines.push('  max hands seen at once: ' + th.maxSeen);
+    lines.push('  two hands held >= 1.5 s: ' + (th.twoPassed ? 'YES' : 'no') + ' (best continuous run ' + (th.twoBestMs / 1000).toFixed(2) + ' s)');
+    lines.push('  handedness test: ' + handednessSummaryText());
+    const st = detectorRef && detectorRef.tracker ? detectorRef.tracker.stats : null;
+    if (st) lines.push('  tracker: ' + JSON.stringify(st));
+    if (latestTracked && latestTracked.hands.length) {
+      lines.push('  hands this frame (raw=' + latestTracked.rawCount + ', overlap=' + latestTracked.overlap + '):');
+      latestTracked.hands.forEach((h) => {
+        lines.push('    #' + h.id + ' label=' + h.handedness + ' side=' + displaySide(h.centre.x) + ' size=' + Math.round(h.size)
+          + 'px letter=' + (h.gesture ? (GESTURE_LABELS[h.gesture] || h.gesture) : '-') + (h.coasting ? ' (held)' : ''));
+      });
+    } else {
+      lines.push('  (no hands this frame)');
+    }
+    return lines;
+  }
+
+  // =============================================================
+  // GUIDE ZONES TEST
+  // =============================================================
+  // The GuideZones instance is created up-front and handed to the detector; the
+  // detector draws it on the overlay and calls onZones every frame.
+  const mirrorView = true; // the demo's video+canvas are always CSS-mirrored
+  const guideZones = new GuideZones({ mirrored: mirrorView });
+  const gzEl = {
+    preset: document.getElementById('gz-preset'), hint: document.getElementById('gz-hint'),
+    zones: document.getElementById('gz-zones'), result: document.getElementById('gz-result'),
+  };
+  let latestZones = null;
+  let lastGzRender = 0;
+  const gzPassLog = []; // times (ms since start) the full pose was newly satisfied
+
+  Object.values(GuideZones.PRESETS).forEach((pr) => {
+    const o = document.createElement('option'); o.value = pr.id; o.textContent = pr.label; gzEl.preset.appendChild(o);
+  });
+  gzEl.preset.addEventListener('change', () => {
+    guideZones.setPreset(gzEl.preset.value || null);
+    latestZones = null; gzPassLog.length = 0;
+    gzEl.hint.textContent = guideZones.preset ? guideZones.preset.hint : 'Pick a layout. Boxes are drawn on the camera view; put a MIDDLE fingertip inside each one and hold it.';
+    renderZonesPanel(null);
+  });
+
+  function onZonesFrame(zr) {
+    const wasSat = latestZones && latestZones.satisfied;
+    latestZones = zr;
+    if (zr.satisfied && !wasSat) gzPassLog.push(Math.round(performance.now()));
+    const now = performance.now();
+    if (now - lastGzRender < 90) return;
+    lastGzRender = now;
+    renderZonesPanel(zr);
+  }
+
+  function renderZonesPanel(zr) {
+    if (!guideZones.preset) { gzEl.zones.innerHTML = ''; gzEl.result.className = 'gz-result wait'; gzEl.result.textContent = '–'; return; }
+    const req = guideZones.preset.requiredMs;
+    const zones = zr ? zr.zones : guideZones.preset.zones.map((z) => ({ label: z.label, occupants: [], dwellMs: 0, met: false }));
+    gzEl.zones.innerHTML = zones.map((z) => {
+      const cls = z.met ? 'met' : (z.occupants.length ? 'in' : '');
+      const status = z.met ? '✓ held' : z.occupants.length ? 'hand #' + z.occupants.join(',#') + ' · ' + (Math.min(z.dwellMs, req) / 1000).toFixed(1) + '/' + (req / 1000).toFixed(1) + ' s' : 'empty';
+      return '<div class="gz-zone ' + cls + '"><span>' + z.label + '</span><span>' + status + '</span></div>';
+    }).join('');
+    if (zr && zr.satisfied) { gzEl.result.className = 'gz-result pass'; gzEl.result.textContent = '✅ ' + guideZones.preset.id + ' pose held'; }
+    else { gzEl.result.className = 'gz-result wait'; gzEl.result.textContent = 'waiting…'; }
+  }
+
+  function zonesReportLines() {
+    const lines = ['Guide zones:'];
+    if (!guideZones.preset) { lines.push('  (off)'); return lines; }
+    lines.push('  preset: ' + guideZones.preset.id + ' (hold ' + guideZones.preset.requiredMs + ' ms'
+      + (guideZones.preset.requireDistinctHands ? ', distinct hands' : '') + ')');
+    if (latestZones) {
+      latestZones.zones.forEach((z) => lines.push('  ' + z.label + ': ' + (z.met ? 'HELD' : z.occupants.length ? 'filling ' + Math.round(z.dwellMs) + ' ms by #' + z.occupants.join(',#') : 'empty')));
+      lines.push('  pose satisfied now: ' + (latestZones.satisfied ? 'YES' : 'no') + ' · times newly satisfied this session: ' + gzPassLog.length);
+    } else lines.push('  (no frame yet)');
+    return lines;
+  }
+
+  // =============================================================
+  // POSE RECORDER (dev tool, this page only)
+  // Countdown -> ONE snapshot of everything the tracker reports -> saved list ->
+  // copy / download as JSON. See HandFeatures in gesture-detection.js for what the
+  // numbers mean (the record itself also carries a short legend).
+  // =============================================================
+  const REC_KEY = 'g4y_poses_v1';
+  const REC_COUNTDOWN_S = 5;
+  const rEl = {
+    name: document.getElementById('rec-name'), hands: document.getElementById('rec-hands'),
+    signer: document.getElementById('rec-signer'), notes: document.getElementById('rec-notes'),
+    go: document.getElementById('rec-go'), status: document.getElementById('rec-status'),
+    list: document.getElementById('rec-list'), size: document.getElementById('rec-size'),
+    fallback: document.getElementById('rec-fallback'),
+    overlay: document.getElementById('rec-overlay'), num: document.getElementById('rec-num'), msg: document.getElementById('rec-msg'),
+  };
+  let recs = [];
+  try { recs = JSON.parse(localStorage.getItem(REC_KEY) || '[]'); if (!Array.isArray(recs)) recs = []; } catch (e) { recs = []; }
+  let recTimer = null, recDeadline = 0, recAudio = null, latestTrackedAt = 0;
+  try { rEl.signer.value = localStorage.getItem('g4y_rec_signer') || ''; } catch (e) { /* ignore */ }
+
+  function recPersist() {
+    try { localStorage.setItem(REC_KEY, JSON.stringify(recs)); return true; }
+    catch (e) { setRecStatus('Could not store in this browser (full or blocked). Copy/download now so nothing is lost.', 'bad'); return false; }
+  }
+  function setRecStatus(t, cls) { rEl.status.textContent = t; rEl.status.className = 'rec-status' + (cls ? ' ' + cls : ''); }
+  const kbOf = (str) => (str.length / 1024).toFixed(1) + ' KB';
+  const r2 = (n) => Math.round(n * 100) / 100;
+
+  function beep(freq, ms) {
+    try {
+      recAudio = recAudio || new (window.AudioContext || window.webkitAudioContext)();
+      const o = recAudio.createOscillator(), g = recAudio.createGain();
+      o.frequency.value = freq; g.gain.value = 0.08;
+      o.connect(g); g.connect(recAudio.destination); o.start(); o.stop(recAudio.currentTime + ms / 1000);
+    } catch (e) { /* no sound is fine */ }
+  }
+
+  // Two copies of the countdown: one on the camera picture, and a floating badge that stays on screen
+  // wherever the page is scrolled (the recorder panel sits far below the camera).
+  const rFloat = { box: document.getElementById('rec-float'), n: document.getElementById('rec-float-n'), l: document.getElementById('rec-float-l') };
+  function showOverlay(num, msg) {
+    rEl.num.textContent = num; rEl.msg.textContent = msg || '';
+    rEl.overlay.classList.add('show');
+    rFloat.n.textContent = num; rFloat.l.textContent = msg || ''; rFloat.box.classList.add('show');
+  }
+  function hideOverlay() { rEl.overlay.classList.remove('show'); rFloat.box.classList.remove('show'); }
+
+  // ---- recording runs as a SEQUENCE: all frames of the picked sign, one after another ----
+  // Countdown before the first frame, a shorter one before the next ones. Clicking the button (or R) while it runs
+  // PAUSES it; click again to resume at the same frame. "Stop" ends the sequence. If a snapshot finds no hand the
+  // sequence pauses on that frame instead of moving on.
+  const REC_GAP_S = 3, REC_GAP_MS = 800;
+  let seq = null; // { poses:[{name,hands}], i, total, state:'run'|'paused' }
+  function updateGo() {
+    const stop = document.getElementById('rec-stop');
+    stop.style.display = seq ? '' : 'none';
+    rEl.go.classList.toggle('counting', !!seq && seq.state === 'run');
+    rEl.go.classList.toggle('paused', !!seq && seq.state === 'paused');
+    if (!seq) {
+      const it = pickKey ? itemByKey(pickKey) : null;
+      rEl.go.textContent = it && it.poses.length > 1 ? '● Record sign (' + it.poses.length + ' frames, automatic)' : '● Record pose (' + REC_COUNTDOWN_S + ' s countdown)';
+    } else {
+      const where = seq.total > 1 ? ' (frame ' + (seq.i + 1) + ' of ' + seq.total + ')' : '';
+      rEl.go.textContent = seq.state === 'run' ? '⏸ Pause' + where : '▶ Resume' + where;
+    }
+  }
+  function startRecording() {
+    if (seq && seq.state === 'run') { pauseSeq(); return; }
+    if (seq && seq.state === 'paused') { runPhase(); return; }
+    const name = rEl.name.value.trim();
+    if (!name) { setRecStatus('Type a pose name first.', 'bad'); rEl.name.focus(); return; }
+    if (!detectorRef) { setRecStatus('Start the camera first (button at the top).', 'bad'); return; }
+    try { localStorage.setItem('g4y_rec_signer', rEl.signer.value.trim()); } catch (e) { /* ignore */ }
+    // from the selected frame to the last frame of the picked sign
+    const it = pickKey ? itemByKey(pickKey) : null;
+    const idx = it ? it.poses.findIndex((p) => p.name === name) : -1;
+    const poses = it && idx >= 0 ? it.poses.slice(idx) : [{ name, hands: parseInt(rEl.hands.value, 10) }];
+    seq = { poses, i: 0, total: poses.length, state: 'run' };
+    runPhase();
+  }
+  function runPhase() {
+    const ph = seq.poses[seq.i];
+    if (PLAN.some((x) => x.name === ph.name)) pickPose(ph.name); else rEl.name.value = ph.name;
+    rEl.hands.value = String(ph.hands);
+    beep(440, 80); // also unlocks audio (needs a user gesture)
+    seq.state = 'run';
+    const secs = seq.i === 0 ? REC_COUNTDOWN_S : REC_GAP_S;
+    recDeadline = performance.now() + secs * 1000;
+    const label = ph.name + (seq.total > 1 ? '  (' + (seq.i + 1) + ' / ' + seq.total + ')' : '');
+    setRecStatus('Get into position for ' + ph.name + '… photo at 0.', '');
+    updateGo();
+    clearInterval(recTimer);
+    let lastShown = null;
+    recTimer = setInterval(() => {
+      const left = recDeadline - performance.now();
+      if (left <= 0) { capturePhase(); return; }
+      const n = Math.ceil(left / 1000);
+      if (n !== lastShown) { lastShown = n; showOverlay(n, label); if (n < secs) beep(660, 90); }
+    }, 50);
+    showOverlay(secs, label);
+  }
+  function pauseSeq(msg) {
+    clearInterval(recTimer); recTimer = null;
+    if (!seq) return;
+    seq.state = 'paused'; hideOverlay(); updateGo();
+    setRecStatus(msg || 'Paused before ' + seq.poses[seq.i].name + '. Click Resume to continue (the countdown starts again), or Stop to end.', '');
+  }
+  function stopSeq(msg) {
+    clearInterval(recTimer); recTimer = null; seq = null;
+    hideOverlay(); updateGo();
+    setRecStatus(msg || 'Stopped.', '');
+  }
+  function capturePhase() {
+    clearInterval(recTimer); recTimer = null;
+    const rec = captureOne();
+    if (!rec) { pauseSeq('No hand was visible at the moment of capture, so nothing was saved and the sequence is paused on ' + seq.poses[seq.i].name + '. Fix it and click Resume.'); setRecStatus(rEl.status.textContent, 'bad'); return; }
+    seq.i++;
+    if (seq.i < seq.total) {
+      updateGo();
+      setTimeout(() => { if (seq && seq.state === 'run' && !recTimer) runPhase(); }, REC_GAP_MS);
+    } else {
+      const n = seq.total; seq = null; updateGo();
+      if (n > 1) setRecStatus(rEl.status.textContent + '  Sign complete (' + n + ' frames).', rEl.status.className.indexOf('bad') >= 0 ? 'bad' : 'good');
+      if (typeof onPoseSaved === 'function') onPoseSaved(rec);
+    }
+  }
+
+  /** One snapshot of the latest frame. Returns the saved record, or null when no hand was visible. */
+  function captureOne() {
+    const fresh = latestTracked && (performance.now() - latestTrackedAt) < 700;
+    const tracked = fresh ? latestTracked : null;
+    const live = tracked ? tracked.hands.filter((h) => !h.coasting) : [];
+    if (!live.length) {
+      beep(220, 300); showOverlay('✖', 'No hand seen — nothing saved');
+      setTimeout(hideOverlay, 1400);
+      return null;
+    }
+    beep(990, 160); showOverlay('📸', 'Saved');
+    setTimeout(hideOverlay, 700);
+    const rec = buildPoseRecord(tracked);
+    recs.push(rec); recPersist(); renderRecList();
+    const w = rec.quality.warnings;
+    setRecStatus('Saved #' + rec.id + ' "' + rec.label + '" (' + rec.quality.handsFound + ' hand' + (rec.quality.handsFound === 1 ? '' : 's') + ')'
+      + (w.length ? ' — check: ' + w.join('; ') : ' — looks good.'), w.length ? 'bad' : 'good');
+    return rec;
+  }
+
+  function buildPoseRecord(tracked) {
+    const vw = document.getElementById('gesture-video').videoWidth || 0;
+    const vh = document.getElementById('gesture-video').videoHeight || 0;
+    const expected = parseInt(rEl.hands.value, 10);
+    const label = rEl.name.value.trim();
+    const take = recs.filter((r) => r.label === label).length + 1;
+    const nextId = recs.reduce((m, r) => Math.max(m, r.id || 0), 0) + 1;
+
+    const faceG = faceGateOn() ? face.current() : null;     // face at the moment of the snapshot (null when tracking is off or no face seen)
+    const hands = tracked.hands.map((h) => {
+      const hasKp = h.keypoints && h.keypoints.length >= 21;
+      const feat = hasKp ? HandFeatures.compute(h.keypoints, h.keypoints3D) : null;
+      return {
+        id: h.id,
+        handedness: h.handedness || null,           // model label; may be swapped, see context.leftRightTest
+        handednessScore: h.score != null ? r2(h.score) : null,
+        coasting: !!h.coasting,                     // true = NOT seen this frame, position held by the tracker
+        trackedAgeMs: Math.round(h.ageMs),
+        seenOnDisplaySide: displaySide(h.centre.x), // side of the (mirrored) screen the learner sees
+        fingerpose: {
+          winner: h.gesture ? { name: h.gesture, score: r2(h.gestureScore) } : null,
+          allScores: h.allScores ? h.allScores.map((g) => ({ name: g.name, score: r2(g.score) })) : null,
+          poseData: h.poseData || null,             // per finger: [finger, curl, direction]
+        },
+        features: feat,
+        faceRel: feat && faceG && !h.coasting ? FaceMath.handToFace(faceG, feat.landmarks2d) : null,   // 21 [u, v] in face heights (see face-tracker.js)
+      };
+    });
+
+    const liveHands = hands.filter((h) => !h.coasting && h.features);
+    let relations = null;
+    if (liveHands.length >= 2) relations = HandFeatures.relation(liveHands[0], liveHands[1], vw);
+
+    // quality checks (never block saving, just flag)
+    const warnings = [];
+    if (liveHands.length !== expected) warnings.push('expected ' + expected + ' hand' + (expected === 1 ? '' : 's') + ' but saw ' + liveHands.length);
+    if (hands.some((h) => h.coasting)) warnings.push('a hand was lost this frame (held by tracker)');
+    liveHands.forEach((h) => {
+      const f = h.features, m = 0.03;
+      if (h.handednessScore != null && h.handednessScore < 0.8) warnings.push('#' + h.id + ' low model confidence (' + h.handednessScore + ')');
+      if (f.size2d < 35) warnings.push('#' + h.id + ' hand is very small in frame (' + f.size2d + ' px), move a little closer');
+      if (vw && vh && (f.bbox2d[0] < vw * m || f.bbox2d[1] < vh * m || f.bbox2d[2] > vw * (1 - m) || f.bbox2d[3] > vh * (1 - m))) warnings.push('#' + h.id + ' touches the edge of the frame');
+    });
+    if (tracked.overlap) warnings.push('hands overlap (tracker ids may be unreliable)');
+    if (FACE_SIGNS[label.replace(/_\d+$/, '')]) {
+      if (!faceG) warnings.push('face not seen: the ' + (FACE_SIGNS[label.replace(/_\d+$/, '')].zone || 'face') + ' position cannot be stored (turn Face tracking on and keep your face in view)');
+      else if (!faceG.live) warnings.push('face position is from ' + faceG.ageMs + ' ms ago (face hidden by the hand?)');
+    }
+
+    return {
+      schema: 'gestures4you.pose.v1',
+      id: nextId, label, take,
+      expectedHands: expected,
+      signer: rEl.signer.value.trim() || null,
+      notes: rEl.notes.value.trim() || null,
+      capturedAt: new Date().toISOString(),
+      countdownSeconds: REC_COUNTDOWN_S,
+      quality: { handsFound: liveHands.length, rawModelHandCount: tracked.rawCount, handsOverlapping: !!tracked.overlap, warnings },
+      context: {
+        videoSize: [vw, vh],
+        displayIsMirrored: true,
+        face: faceG ? { heightPx: Math.round(faceG.H), ageMs: faceG.ageMs, live: faceG.live, pointsPx: faceG.pts, note: 'hands[].faceRel = 21 hand landmarks as [u, v] in face heights, origin halfway between landmark 10 (forehead) and 152 (chin)' } : null,
+        userAgent: navigator.userAgent,
+        detector: detectorRef ? { modelType: detectorRef.modelType, maxHands: detectorRef.maxHands } : null,
+        trackerStats: detectorRef && detectorRef.tracker ? { ...detectorRef.tracker.stats } : null,
+        leftRightTest: handednessSummaryText(),
+        guideZones: guideZones.preset && latestZones ? {
+          preset: guideZones.preset.id, satisfied: latestZones.satisfied,
+          zones: latestZones.zones.map((z) => ({ id: z.id, occupiedBy: z.occupants, dwellMs: Math.round(z.dwellMs), held: z.met })),
+        } : null,
+        landmarkNames: HandFeatures.LANDMARK_NAMES,
+      },
+      relations,
+      hands,
+    };
+  }
+
+  function recAllText() {
+    return JSON.stringify({
+      schema: 'gestures4you.poses.v1',
+      exportedAt: new Date().toISOString(),
+      count: recs.length,
+      legend: 'landmarks2d = pixels of the raw (unmirrored) frame; landmarks3d = metric, per-hand origin; palmFrame = hand-centred, divided by hand size (wrist origin, y = wrist->middle knuckle, z = palm normal); bendDeg 0 = straight; distances "Sizes" = in hand sizes; relations use 2D only.',
+      poses: recs,
+    });
+  }
+
+  function renderRecList() {
+    rEl.list.innerHTML = recs.slice().reverse().map((r) => {
+      const w = r.quality && r.quality.warnings && r.quality.warnings.length ? '<div class="w">⚠ ' + r.quality.warnings.join(' · ') + '</div>' : '';
+      const size = kbOf(JSON.stringify(r));
+      return '<div class="rec-item" data-id="' + r.id + '"><div class="t">#' + r.id + ' ' + escapeHtml(r.label) + (r.take > 1 ? ' (take ' + r.take + ')' : '') + '</div>'
+        + '<div class="m">' + r.quality.handsFound + '/' + r.expectedHands + ' hand(s) · ' + size + (r.signer ? ' · ' + escapeHtml(r.signer) : '') + '</div>'
+        + (r.notes ? '<div class="m">' + escapeHtml(r.notes) + '</div>' : '') + w
+        + '<div class="b"><button class="btn-secondary" data-act="copy">Copy this pose</button><button class="btn-secondary" data-act="del">Delete</button></div></div>';
+    }).join('');
+    if (typeof refreshPicker === 'function') refreshPicker();
+    if (typeof emoRecordChanged === 'function') emoRecordChanged();
+    rEl.size.textContent = recs.length ? recs.length + ' pose' + (recs.length === 1 ? '' : 's') + ' saved · all together ' + kbOf(recAllText()) + (recAllText().length > 60000 ? ' (big: use Download rather than Copy)' : '') : 'Nothing saved yet.';
+  }
+  function escapeHtml(t) { return String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  async function copyText(text, btn, okLabel) {
+    rEl.fallback.style.display = 'none';
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (err) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+    }
+    if (!ok) {
+      // never lose the data: show it in a box the person can select and copy by hand
+      rEl.fallback.value = text; rEl.fallback.style.display = 'block'; rEl.fallback.focus(); rEl.fallback.select();
+      setRecStatus('Automatic copy was blocked. The text is in the box below: select all and copy it.', 'bad');
+      return;
+    }
+    const old = btn.textContent; btn.textContent = okLabel || 'Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = old; btn.classList.remove('copied'); }, 1500);
+  }
+
+  rEl.go.addEventListener('click', startRecording);
+  document.getElementById('rec-stop').addEventListener('click', () => stopSeq('Stopped. Frames already saved are kept.'));
+  rEl.list.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const item = b.closest('.rec-item'); const id = parseInt(item.dataset.id, 10);
+    const rec = recs.find((r) => r.id === id); if (!rec) return;
+    if (b.dataset.act === 'copy') copyText(JSON.stringify(rec), b);
+    if (b.dataset.act === 'del') { recs = recs.filter((r) => r.id !== id); recPersist(); renderRecList(); }
+  });
+  document.getElementById('rec-copy-all').addEventListener('click', (e) => {
+    if (!recs.length) { setRecStatus('Nothing saved yet.', 'bad'); return; }
+    copyText(recAllText(), e.currentTarget);
+  });
+  document.getElementById('rec-download').addEventListener('click', () => {
+    if (!recs.length) { setRecStatus('Nothing saved yet.', 'bad'); return; }
+    const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+    const fname = 'gestures4you-poses-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + '.json';
+    const blob = new Blob([recAllText()], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setRecStatus('Downloaded ' + fname, 'good');
+  });
+  // ---- import an exported poses file (or a single copied pose) INTO the recorder ----
+  document.getElementById('rec-import').addEventListener('change', (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    f.text().then((t) => {
+      const data = JSON.parse(t);
+      const list = Array.isArray(data) ? data : (data && data.poses) ? data.poses : (data && data.schema === 'gestures4you.pose.v1') ? [data] : null;
+      if (!list) throw new Error('no poses found in this file');
+      let added = 0, dup = 0, bad = 0;
+      list.forEach((r) => {
+        if (!r || !r.label || !Array.isArray(r.hands) || !r.hands.length) { bad++; return; }
+        if (recs.some((x) => x.label === r.label && x.capturedAt && x.capturedAt === r.capturedAt)) { dup++; return; }
+        const copy = JSON.parse(JSON.stringify(r));
+        copy.id = recs.reduce((m, x) => Math.max(m, x.id || 0), 0) + 1;
+        copy.take = recs.filter((x) => x.label === copy.label).length + 1;
+        copy.quality = copy.quality || { handsFound: copy.hands.length, warnings: [] };
+        copy.quality.warnings = copy.quality.warnings || [];
+        copy.expectedHands = copy.expectedHands || copy.hands.length;
+        recs.push(copy); added++;
+      });
+      if (added) { recPersist(); renderRecList(); }
+      setRecStatus('Imported ' + added + ' pose' + (added === 1 ? '' : 's') + ' from ' + f.name + (dup ? ' · ' + dup + ' already here, skipped' : '') + (bad ? ' · ' + bad + ' not usable, skipped' : '') + '.', added ? 'good' : 'bad');
+    }).catch((err) => setRecStatus('Could not import that file: ' + err.message, 'bad'));
+  });
+  document.getElementById('rec-clear').addEventListener('click', () => {
+    if (!recs.length) return;
+    if (!confirm('Delete all ' + recs.length + ' saved poses from this browser? Copy or download them first if you still need them.')) return;
+    recs = []; recPersist(); renderRecList(); setRecStatus('Cleared.', '');
+  });
+
+  // =============================================================
+  // UI: tabs, status chips, recorder sign picker (page layout only, no detector logic)
+  // =============================================================
+  const stageStart = document.getElementById('stage-start');
+  const stageStartMsg = stageStart.querySelector('div');
+  const chipCam = document.getElementById('chip-cam'), chipHands = document.getElementById('chip-hands'), chipRec = document.getElementById('chip-rec');
+  function setChip(chip, cls, text) { chip.classList.toggle('on', cls === 'on'); chip.querySelector('b').textContent = text; }
+
+  // ---- tabs (click, or keys 1-5 when not typing) ----
+  const tabBtns = Array.from(document.querySelectorAll('.tab')), panes = Array.from(document.querySelectorAll('.pane'));
+  function showTab(name) {
+    tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+    panes.forEach((p) => p.classList.toggle('active', p.dataset.pane === name));
+    try { localStorage.setItem('g4y_demo_tab', name); } catch (e) { /* ignore */ }
+  }
+  tabBtns.forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  try { const t = localStorage.getItem('g4y_demo_tab'); if (t && tabBtns.some((b) => b.dataset.tab === t)) showTab(t); } catch (e) { /* ignore */ }
+  const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '');
+  document.addEventListener('keydown', (e) => {
+    if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+    const i = '12345'.indexOf(e.key);
+    if (i >= 0 && tabBtns[i]) { showTab(tabBtns[i].dataset.tab); return; }
+    if (e.key === 'r' || e.key === 'R') { showTab('rec'); startRecording(); e.preventDefault(); }
+  });
+
+  // ---- live chips + tab badges (mirror the existing readouts, so detector code stays untouched) ----
+  const thRawEl = document.getElementById('th-raw'), thCheckEl = document.getElementById('th-check-two');
+  const handsBadge = document.getElementById('tab-hands-badge'), zonesBadge = document.getElementById('tab-zones-badge');
+  const gzResultEl = document.getElementById('gz-result');
+  function syncLive() {
+    const n = parseInt(thRawEl.textContent, 10) || 0;
+    handsBadge.textContent = n;
+    handsBadge.classList.toggle('ok', thCheckEl.classList.contains('pass'));
+    setChip(chipHands, n > 0 ? 'on' : '', n + (thCheckEl.classList.contains('pass') ? ' ✅' : ''));
+    const gz = gzResultEl.classList.contains('pass');
+    zonesBadge.style.display = guideZones.preset ? 'inline-block' : 'none';
+    zonesBadge.textContent = gz ? '✓' : '…'; zonesBadge.classList.toggle('ok', gz);
+  }
+  setInterval(syncLive, 250);
+
+  // ---- recorder sign picker ----
+  const NEG_POSES = [['neg_rest_1', 1], ['neg_open_1', 1], ['neg_fist_1', 1], ['neg_point_1', 1], ['neg_rest_2', 2], ['neg_clasp_2', 2], ['neg_open_2', 2], ['neg_fists_2', 2]];
+  const pk = { sel: document.getElementById('rec-sign'), frames: document.getElementById('rec-frames'), prog: document.getElementById('rec-prog'), auto: document.getElementById('rec-auto') };
+  // Flat list of every pose that should be recorded, in checklist order.
+  const PLAN = [];
+  const GROUPS = []; // [{label, items:[{key,label,poses:[{name,hands}]}]}]
+  (function buildPlan() {
+    if (typeof SIGNS === 'undefined' || typeof UNITS === 'undefined') return;
+    UNITS.forEach((u) => {
+      if (!SIGNS[u.id]) return;
+      const g = { label: (u.course === 'emotions' ? 'Emotions ' : 'Words ') + u.id, items: [] };
+      SIGNS[u.id].forEach((sg) => {
+        const [id, th, frames, hands] = sg;
+        const poses = []; for (let i = 1; i <= frames; i++) poses.push({ name: id + '_' + i, hands: hands || 1 });
+        g.items.push({ key: id, label: id + ' (' + th + ') · ' + (hands || 1) + ' hand' + ((hands || 1) === 2 ? 's' : ''), poses });
+      });
+      GROUPS.push(g);
+    });
+    GROUPS.push({ label: 'Not a sign', items: NEG_POSES.map(([n, h]) => ({ key: n, label: n + ' · ' + h + ' hand' + (h === 2 ? 's' : ''), poses: [{ name: n, hands: h }] })) });
+    GROUPS.forEach((g) => g.items.forEach((it) => it.poses.forEach((p) => PLAN.push({ ...p, key: it.key }))));
+  })();
+  const recDone = (name) => recs.some((r) => r.label === name);
+  let pickKey = null; // sign key currently selected
+
+  function itemByKey(k) { for (const g of GROUPS) for (const it of g.items) if (it.key === k) return it; return null; }
+  function buildSelect() {
+    pk.sel.innerHTML = '<option value="">Custom name (type below)</option>' + GROUPS.map((g) =>
+      '<optgroup label="' + g.label + '">' + g.items.map((it) => {
+        const done = it.poses.every((p) => recDone(p.name));
+        return '<option value="' + it.key + '">' + (done ? '✓ ' : '') + it.label + '</option>';
+      }).join('') + '</optgroup>').join('');
+    pk.sel.value = pickKey || '';
+  }
+  function renderFrames() {
+    const it = pickKey ? itemByKey(pickKey) : null;
+    if (!it) { pk.frames.innerHTML = '<span class="lab">Custom pose: type the name below.</span>'; if (!seq) updateGo(); return; }
+    const cur = rEl.name.value.trim();
+    if (!seq) updateGo();
+    const lab = it.poses.length === 1 ? 'hold the pose' : 'frame (1 = start, ' + (it.poses.length === 3 ? '2 = middle, 3 = end' : '2 = end') + ')';
+    pk.frames.innerHTML = '<span class="lab">' + lab + '</span>' + it.poses.map((p, i) =>
+      '<button class="fr btn-secondary' + (p.name === cur ? ' sel' : '') + (recDone(p.name) ? ' done' : '') + '" data-pose="' + p.name + '">' + (it.poses.length === 1 ? p.name : (i + 1)) + '</button>').join('');
+  }
+  function pickPose(name) {
+    const p = PLAN.find((x) => x.name === name); if (!p) return;
+    pickKey = p.key; pk.sel.value = p.key;
+    rEl.name.value = p.name; rEl.hands.value = String(p.hands);
+    renderFrames();
+  }
+  function refreshPicker() {
+    if (!PLAN.length) { pk.sel.style.display = 'none'; pk.frames.style.display = 'none'; pk.auto.parentElement.style.display = 'none'; }
+    else { buildSelect(); renderFrames(); const n = PLAN.filter((p) => recDone(p.name)).length; pk.prog.innerHTML = '<b>' + n + '</b> / ' + PLAN.length + ' poses'; }
+    if (typeof updateGo === 'function' && !seq) updateGo();
+    setChip(chipRec, recs.length ? 'on' : '', recs.length);
+    document.getElementById('tab-rec-badge').textContent = recs.length;
+  }
+  function onPoseSaved(rec) {
+    if (!PLAN.length || !pk.auto.checked || !pickKey) return;
+    const i = PLAN.findIndex((p) => p.name === rec.label); if (i < 0) return;
+    // next pose that is not recorded yet (after this one, then wrap around)
+    const order = PLAN.slice(i + 1).concat(PLAN.slice(0, i));
+    const nxt = order.find((p) => !recDone(p.name));
+    if (nxt) { const t = rEl.status.textContent; pickPose(nxt.name); setRecStatus(t + '  Next: ' + nxt.name + '.', rec.quality.warnings.length ? 'bad' : 'good'); }
+  }
+  pk.sel.addEventListener('change', () => {
+    if (seq) stopSeq('Stopped (another sign was picked).');
+    pickKey = pk.sel.value || null;
+    const it = pickKey ? itemByKey(pickKey) : null;
+    if (it) { const first = it.poses.find((p) => !recDone(p.name)) || it.poses[0]; pickPose(first.name); } else renderFrames();
+  });
+  pk.frames.addEventListener('click', (e) => { if (seq) stopSeq('Stopped (another frame was picked).'); const b = e.target.closest('button[data-pose]'); if (b) pickPose(b.dataset.pose); });
+  rEl.name.addEventListener('input', () => {
+    if (seq) stopSeq('Stopped (the name was changed).');
+    const p = PLAN.find((x) => x.name === rEl.name.value.trim());
+    if (p) { pickKey = p.key; pk.sel.value = p.key; rEl.hands.value = String(p.hands); } 
+    renderFrames();
+  });
+
+  // =============================================================
+  // TESTING POSES TAB: compare the live hands with RECORDED poses (pose-match.js)
+  // =============================================================
+  const emo = { templates: [], signs: [], fileName: '', target: null, idx: 0, since: 0, lastTick: 0, doneAt: 0, source: 'file', fileData: null, fileLabel: '', relief: 0 };
+  try { emo.source = localStorage.getItem('g4y_emo_src') === 'rec' ? 'rec' : 'file'; } catch (e) { /* ignore */ }
+  const emEl = { file: document.getElementById('emo-file'), msg: document.getElementById('emo-msg'), grid: document.getElementById('emo-grid'),
+    sign: document.getElementById('emo-sign'), thr: document.getElementById('emo-thr'), thrV: document.getElementById('emo-thr-v'),
+    stages: document.getElementById('emo-stages'), parts: document.getElementById('emo-parts'), sep: document.getElementById('emo-sep'),
+    sepSum: document.getElementById('emo-sepsum'), badge: document.getElementById('tab-emo-badge'), load: document.getElementById('emo-load') };
+  const signOf = (label) => label.replace(/_\d+$/, '');
+  const stageOf = (label) => parseInt((label.match(/_(\d+)$/) || [0, 1])[1], 10);
+
+  function loadPoseData(data, name) {
+    const poses = (data && data.poses) || (data && data.schema === 'gestures4you.pose.v1' ? [data] : []);
+    // newest take of each pose name wins
+    const byLabel = {};
+    poses.forEach((r) => { if (r.hands && r.hands.length) byLabel[r.label] = r; });
+    emo.templates = Object.values(byLabel).map((r) => PoseMatch.templateOf(r)).filter((t) => t.hands.length);
+    const order = {};
+    emo.signs = [];
+    emo.templates.forEach((t) => { const k = signOf(t.label); if (!order[k]) { order[k] = { id: k, stages: [] }; emo.signs.push(order[k]); } order[k].stages.push(t); });
+    emo.signs.forEach((sg) => sg.stages.sort((a, b) => stageOf(a.label) - stageOf(b.label)));
+    emo.fileName = name;
+    const th = (id) => { try { for (const u of UNITS) if (SIGNS[u.id]) { const f = SIGNS[u.id].find((x) => x[0] === id); if (f) return f[1]; } } catch (e) { /* ignore */ } return ''; };
+    emo.signs.forEach((sg) => {
+      sg.th = th(sg.id);
+      sg.info = PoseMatch.analyseSign(sg.stages); sg.mode = sg.info.mode;
+      if (FACE_SIGNS[sg.id] && sg.stages.length >= 2) sg.mode = 'staged';   // frame-by-frame, so each frame's face rule (away / touching the forehead) is checked; motion mode ignores the face check
+      sg.track = sg.mode === 'motion' ? new PoseMatch.MotionTrack(sg.stages) : null;
+    });
+    emEl.file.innerHTML = '<b>' + escapeHtml(name) + '</b>: ' + emo.templates.length + ' poses, ' + emo.signs.length + ' signs (' + emo.signs.map((s) => s.id).join(', ') + ')';
+    emEl.sign.innerHTML = emo.signs.map((s) => '<option value="' + s.id + '">' + s.id + (s.th ? ' (' + s.th + ')' : '') + (s.mode === 'motion' ? ' · motion' : ' · ' + s.stages.length + ' frames') + '</option>').join('');
+    const keep = emo.signs.find((x) => x.id === emo.target);          // keep the chosen sign when the record changes
+    if (!keep) { emo.target = emo.signs[0] ? emo.signs[0].id : null; emo.idx = 0; emo.since = 0; }
+    else { emEl.sign.value = emo.target; if (emo.idx > keep.stages.length) emo.idx = 0; }
+    renderEmoGrid(null); renderEmoStages(null); renderEmoSeparation();
+  }
+  // ---- source toggle: "Current record" (poses saved in the Recorder tab, no download needed) or "From file" ----
+  const srcBtns = Array.from(document.querySelectorAll('#emo-src button'));
+  function emoApplySource() {
+    srcBtns.forEach((b) => b.classList.toggle('on', b.dataset.src === emo.source));
+    document.getElementById('emo-load-lbl').style.display = emo.source === 'file' ? '' : 'none';
+    if (emo.source === 'rec') {
+      const n = recs.filter((r) => r.hands && r.hands.length).length;
+      if (!n) {
+        loadPoseData({ poses: [] }, 'Current record');
+        emEl.file.innerHTML = '<b>Current record</b> is empty. Record poses in tab 4, they appear here as soon as they are saved.';
+        return;
+      }
+      loadPoseData({ poses: recs }, 'Current record');
+      emEl.file.innerHTML = '<b>Current record</b> (live from the Recorder tab): ' + emo.templates.length + ' poses, ' + emo.signs.length + ' signs (' + emo.signs.map((s) => s.id).join(', ') + ')';
+    } else if (emo.fileData) {
+      loadPoseData(emo.fileData, emo.fileLabel);
+    } else {
+      emEl.file.textContent = 'No file loaded yet. Use "Load poses file…".';
+      loadPoseData({ poses: [] }, '');
+      emEl.file.textContent = 'No file loaded yet. Use "Load poses file…".';
+    }
+  }
+  srcBtns.forEach((b) => b.addEventListener('click', () => {
+    emo.source = b.dataset.src; try { localStorage.setItem('g4y_emo_src', emo.source); } catch (e) { /* ignore */ }
+    emo.idx = 0; emo.since = 0; emo.doneAt = 0; emoApplySource();
+  }));
+  // called by the recorder whenever a pose is saved or deleted
+  function emoRecordChanged() { if (emo.source === 'rec') emoApplySource(); }
+  function emoSetFile(d, label) { emo.fileData = d; emo.fileLabel = label; if (emo.source === 'file') emoApplySource(); }
+  fetch('../assets/poses/all-signs.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((d) => { if (!emo.fileData) emoSetFile(d, 'assets/poses/all-signs.json'); })
+    .catch(() => { if (emo.source === 'file' && !emo.fileData) emEl.file.textContent = 'Could not load assets/poses/all-signs.json (open the page through the local server). Use "Load poses file…" instead.'; });
+  emEl.load.addEventListener('change', () => {
+    const f = emEl.load.files[0]; if (!f) return;
+    f.text().then((t) => emoSetFile(JSON.parse(t), f.name)).catch((e) => { emEl.file.textContent = 'Could not read that file: ' + e.message; });
+    emEl.load.value = '';
+  });
+  emoApplySource();
+  emEl.sign.addEventListener('change', () => { emo.target = emEl.sign.value; emo.idx = 0; emo.since = 0; emo.doneAt = 0; const g = emo.signs.find((x) => x.id === emo.target); if (g && g.track) g.track.reset(); renderEmoStages(null); });
+  emEl.thr.addEventListener('input', () => { emEl.thrV.textContent = emEl.thr.value; });
+
+  function renderEmoSeparation() {
+    const rows = []; let warn = 0;
+    emo.templates.forEach((a) => {
+      let best = null;
+      emo.templates.forEach((b) => {
+        if (signOf(b.label) === signOf(a.label)) return;
+        const r = PoseMatch.comparePose(a.hands, b.hands, a.video, b.video);
+        if (r && (!best || r.overall > best.r.overall)) best = { b, r };
+      });
+      if (best) { const w = best.r.overall >= 70; if (w) warn++; rows.push('<div class="emo-sep' + (w ? ' warn' : '') + '"><span>' + a.label + ' ≈ ' + best.b.label + '</span><span>' + best.r.overall + '%</span></div>'); }
+    });
+    emEl.sep.innerHTML = rows.join('') || 'Needs poses from at least two signs.';
+    emEl.sepSum.textContent = 'Separation check: ' + (warn ? warn + ' pose pair' + (warn === 1 ? '' : 's') + ' look alike (≥ 70%)' : 'all signs look different') + ' — click to see';
+  }
+
+  function emoLive() {
+    if (!latestTracked || performance.now() - latestTrackedAt > 700) return { hands: [], vw: 640, vh: 480 };
+    const v = document.getElementById('gesture-video');
+    const hands = [];
+    latestTracked.hands.forEach((h) => { if (!h.coasting && h.keypoints && h.keypoints.length >= 21) hands.push(HandFeatures.compute(h.keypoints, h.keypoints3D)); });
+    return { hands, vw: v.videoWidth || 640, vh: v.videoHeight || 480 };
+  }
+
+  function renderEmoGrid(res, thrIn) {
+    const thr = thrIn != null ? thrIn : parseInt(emEl.thr.value, 10);
+    let bestLbl = null, bestV = -1, rawLbl = null, rawV = -1;       // best = among poses not blocked by the face zone; raw = any
+    const isBlk = (r) => !!(r && r.gate && r.gate.ok !== true);
+    if (res) Object.keys(res).forEach((k) => {
+      if (!res[k]) return;
+      if (res[k].overall > rawV) { rawV = res[k].overall; rawLbl = k; }
+      if (!isBlk(res[k]) && res[k].overall > bestV) { bestV = res[k].overall; bestLbl = k; }
+    });
+    const maxStages = Math.max(3, ...emo.signs.map((s) => s.stages.length));
+    let h = '<tr><th></th>' + Array.from({ length: maxStages }, (_, i) => '<th>frame ' + (i + 1) + '</th>').join('') + '</tr>';
+    emo.signs.forEach((sg) => {
+      h += '<tr><td class="sg">' + sg.id + '<small>' + (sg.mode === 'motion' ? '▶ motion' : (sg.th || '')) + '</small></td>';
+      for (let i = 0; i < maxStages; i++) {
+        const t = sg.stages[i];
+        if (!t) { h += '<td></td>'; continue; }
+        const r = res && res[t.label], v = r ? r.overall : null;
+        const blk = isBlk(r);
+        h += '<td><div class="emo-cell' + (blk ? ' blk' : (v != null && v >= thr ? ' hit' : '')) + (t.label === bestLbl && v >= 50 ? ' best' : '') + '"' + (blk ? ' title="' + escapeHtml(FaceGate.text(r.gate)) + '"' : '') + '><i style="width:' + (v || 0) + '%"></i><span>' + (v == null ? '–' : v + (blk ? ' ✗' : '')) + '</span></div></td>';
+      }
+      h += '</tr>';
+    });
+    emEl.grid.innerHTML = h;
+    return { bestLbl, bestV, rawLbl, rawV };
+  }
+
+  function renderEmoMotion(sg, r) {
+    const M = PoseMatch.MOTION, info = sg.info;
+    const holding = r.phase === 'hold', moving = r.phase === 'move', done = r.phase === 'done';
+    emEl.stages.innerHTML =
+      '<span class="emo-st ' + (holding ? 'now' : 'ok') + '">' + (holding ? '' : '✓ ') + '1 · hold start pose' + (holding && r.holdMs ? ' ' + Math.round(r.holdMs / 10 * 2) + '%' : '') + '</span>'
+      + '<span class="emo-st ' + (done ? 'ok' : moving ? 'now' : '') + '">' + (done ? '✓ ' : '') + '2 · move' + (moving ? ' ' + (r.moveLeftMs / 1000).toFixed(1) + ' s left' : '') + '</span>'
+      + (done ? '<b style="color:var(--ok)">✅ ' + sg.id + ' passed</b>' : '<span style="font-size:12px;color:var(--dim)">' + escapeHtml(r.msg) + '</span>');
+    const pct = (v) => (v == null ? '–' : v + '%');
+    const dirTxt = !info.needDirection ? 'any' : (r.dir.length ? r.dir.map((d) => Math.round(d.cos * 100) + '%').join(' / ') : '–');
+    const P = (l, v) => '<div class="emo-part">' + l + '<b>' + v + '</b></div>';
+    emEl.parts.innerHTML = P('handshape', pct(r.shape)) + P('palm direction', pct(r.orient)) + P('moved', r.extent.toFixed(2) + ' / ' + r.extentNeed.toFixed(2)) + P('direction', dirTxt);
+  }
+
+  function renderEmoStages(parts) {
+    const sg = emo.signs.find((s) => s.id === emo.target);
+    if (!sg) { emEl.stages.innerHTML = ''; emEl.parts.innerHTML = ''; return; }
+    if (sg.mode === 'motion') return;      // drawn by renderEmoMotion every tick
+    const done = performance.now() - emo.doneAt < 3000 && emo.doneAt > 0;
+    emEl.stages.innerHTML = sg.stages.map((t, i) => '<span class="emo-st' + (done || i < emo.idx ? ' ok' : (i === emo.idx ? ' now' : '')) + '">' + (done || i < emo.idx ? '✓ ' : '') + 'frame ' + (i + 1) + '</span>').join('')
+      + (done ? '<b style="color:var(--ok)">✅ ' + sg.id + ' passed</b>' : '');
+    const P = (k, l) => '<div class="emo-part">' + l + '<b>' + (parts && parts[k] != null ? parts[k] + '%' : '–') + '</b></div>';
+    const gt = parts && parts.gate;
+    const faceCell = gt ? '<div class="emo-part">face zone (' + gt.zone.zone + ')<b style="font-size:13px;color:' + (gt.ok ? 'var(--ok)' : 'var(--warn)') + '">' + (gt.state === 'noface' ? 'no face' : gt.state === 'nohand' ? '–' : (gt.ok ? '✓ in' : '✗ ' + gt.dist)) + '</b></div>' : '';
+    emEl.parts.innerHTML = P('shape', 'handshape') + P('orient', 'palm direction') + P('layout', 'hand layout') + P('position', 'screen position') + faceCell;
+  }
+
+  function emoTick() {
+    if (!emo.templates.length) return;
+    const now = performance.now(), thr0 = parseInt(emEl.thr.value, 10);
+    const live = emoLive();
+    const need = Math.max(...emo.templates.map((t) => t.hands.length));
+    // smaller live hand than the recorded one (signer stepped back): relax the pass level a little
+    const sgSel = emo.signs.find((s) => s.id === emo.target);
+    const relief = live.hands.length && sgSel ? PoseMatch.smallHandRelief(live.hands, sgSel.stages[0].hands, [live.vw, live.vh], sgSel.stages[0].video) : 0;
+    emo.relief = relief;
+    const thr = thr0 - relief;
+    const res = {};
+    if (live.hands.length >= 1) emo.templates.forEach((t) => { res[t.label] = PoseMatch.comparePose(t.hands, live.hands, t.video, [live.vw, live.vh]); });
+    // face zone check (mother = chin, father = forehead): the pose only counts when the hand is also at the right place on the face
+    const geom = faceGateOn() ? face.current(now) : null;
+    if (faceGateOn()) emo.templates.forEach((t) => { const r = res[t.label]; if (r) r.gate = FaceGate.check(signOf(t.label), t, live.hands, geom); });
+    const { bestLbl, bestV, rawLbl, rawV } = renderEmoGrid(live.hands.length ? res : null, thr);
+    emo.geom = geom; emo.gateNow = (sgSel && res[sgSel.stages[Math.min(emo.idx, sgSel.stages.length - 1)].label] || {}).gate || null;
+    // message
+    let msg, cls = '';
+    if (!detectorRef) msg = 'Start the camera and show your hands.';
+    else if (live.hands.length < need) { msg = 'Seeing ' + live.hands.length + ' hand' + (live.hands.length === 1 ? '' : 's') + ': these signs need ' + need + '. Show both hands.'; cls = 'bad'; }
+    else if (rawV >= thr && bestV < thr && res[rawLbl].gate && res[rawLbl].gate.ok !== true) { msg = 'Handshape looks like ' + rawLbl + ' (' + rawV + '%) but ' + FaceGate.text(res[rawLbl].gate); cls = 'bad'; }
+    else if (bestV < 50) msg = 'No recorded pose is close (best ' + bestV + '%).';
+    else {
+      const sorted = Object.keys(res).filter((k) => res[k] && !(res[k].gate && res[k].gate.ok !== true)).sort((a, b) => res[b].overall - res[a].overall);
+      const second = sorted.find((k) => signOf(k) !== signOf(bestLbl));
+      const gap = second ? bestV - res[second].overall : 99;
+      msg = 'Closest: ' + bestLbl + ' (' + bestV + '%)' + (second ? ', best other sign: ' + second + ' (' + res[second].overall + '%)' : '');
+      if (bestV >= thr && gap < 8) { msg += ' — too close to call'; cls = 'bad'; } else if (bestV >= thr) cls = 'good';
+    }
+    emEl.thrV.textContent = emEl.thr.value + (relief ? ' (now ' + thr + ': small hand)' : '');
+    emEl.msg.textContent = msg; emEl.msg.className = 'emo-msg' + (cls ? ' ' + cls : '');
+    emEl.badge.style.display = detectorRef && bestV >= thr && bestLbl ? 'inline-block' : 'none';
+    emEl.badge.textContent = '●'; emEl.badge.classList.add('ok');
+    // stage tracker for the chosen sign
+    const sg = emo.signs.find((s) => s.id === emo.target);
+    let parts = null;
+    const hintEl = document.getElementById('emo-hint');
+    if (sg && sg.mode === 'motion') {
+      hintEl.innerHTML = '<b>Motion sign</b> (the handshape stays the same, like J / Z). Make the start pose and hold it for 0.5 s, then do the movement within ' + (PoseMatch.MOTION.MOVE_MS / 1000) + ' s while keeping the handshape. '
+        + (sg.info.needDirection ? 'The hands must travel the same way as in the recording.' : 'Any direction counts, the hands just have to move far enough.')
+        + ' The pass level slider is not used for motion signs. Recorded handshape change between frames: ' + sg.info.maxShapeDeg + '°.';
+      renderEmoMotion(sg, sg.track.update(now, detectorRef ? live.hands : [], live.vw, live.vh, relief));
+      return;
+    }
+    if (sg) hintEl.textContent = 'Frames in order. Each one must stay above the pass level for 0.25 s; the sequence resets after 8 s without progress.' + (sg.info.maxShapeDeg ? ' Handshape changes by ' + sg.info.maxShapeDeg + '° between frames, so this one is checked frame by frame.' : '')
+      + (FACE_SIGNS[sg.id] ? ' This sign also needs the ' + (FACE_SIGNS[sg.id].zone || Object.values(FACE_SIGNS[sg.id].zones).join(' / ')) + ' zone (face tracking): ' + (faceGateOn() ? 'zone from ' + FaceGate.zoneOf(sg.id, sg.stages[0]).source + ' pose.' : 'OFF, so the position is not checked.') : '');
+    if (sg && live.hands.length) {
+      if (emo.doneAt && now - emo.doneAt > 3000) { emo.doneAt = 0; emo.idx = 0; }
+      if (!emo.doneAt) {
+        const t = sg.stages[emo.idx], r = t && res[t.label];
+        parts = r || null;
+        if (r && r.overall >= thr && !(r.gate && r.gate.ok !== true)) {
+          if (!emo.since) emo.since = now;
+          if (now - emo.since >= 250) { emo.idx++; emo.since = 0; emo.lastTick = now; if (emo.idx >= sg.stages.length) { emo.doneAt = now; } }
+        } else emo.since = 0;
+        if (emo.idx > 0 && !emo.doneAt && now - emo.lastTick > 8000) { emo.idx = 0; emo.since = 0; }
+      }
+    }
+    renderEmoStages(parts);
+  }
+  setInterval(emoTick, 120);
+
+  renderRecList();
+  if (PLAN.length && !rEl.name.value) { const first = PLAN.find((p) => !recDone(p.name)) || PLAN[0]; pickPose(first.name); }
+
+  // =============================================================
+  // FACE TRACKING (face-tracker.js): chin / forehead zones for mother and father
+  // =============================================================
+  const face = new FaceTracker();
+  const faceOnEl = document.getElementById('face-on'), faceStateEl = document.getElementById('face-state'), faceCv = document.getElementById('face-canvas');
+  try { faceOnEl.checked = localStorage.getItem('g4y_face_on') !== '0'; } catch (e) { /* ignore */ }
+  const faceGateOn = () => faceOnEl.checked;
+  function faceStart() { if (faceOnEl.checked && detectorRef && face.status === 'idle') face.start(document.getElementById('gesture-video')); }
+  faceOnEl.addEventListener('change', () => {
+    try { localStorage.setItem('g4y_face_on', faceOnEl.checked ? '1' : '0'); } catch (e) { /* ignore */ }
+    if (faceOnEl.checked) { if (face.status === 'error') face.status = 'idle'; faceStart(); } else face.stop();
+  });
+  function syncFace() {
+    const chip = document.getElementById('chip-face');
+    let t = 'off', on = false;
+    if (faceOnEl.checked) {
+      if (!detectorRef) t = 'waits for camera';
+      else if (face.status === 'loading') t = 'loading…';
+      else if (face.status === 'error') t = 'failed';
+      else if (face.status === 'running') { const g = face.current(); t = g ? (g.live ? 'live' : 'held') : 'no face'; on = !!g; }
+    }
+    faceStateEl.textContent = t; chip.classList.toggle('on', on);
+    chip.title = face.status === 'error' ? 'Face model failed: ' + face.error : 'Face model for the chin / forehead check (mother, father). Loads after the camera starts.';
+    faceStart();
+  }
+  setInterval(syncFace, 400);
+
+  // overlay on the camera: face landmarks used + the zone of the sign being tried (drawn in raw coordinates, the canvas is mirrored by CSS like the hand canvas)
+  function drawFace() {
+    const v = document.getElementById('gesture-video'), w = v.videoWidth || 640, h = v.videoHeight || 480;
+    if (faceCv.width !== w || faceCv.height !== h) { faceCv.width = w; faceCv.height = h; }
+    const ctx = faceCv.getContext('2d'); ctx.clearRect(0, 0, w, h);
+    const emoOn = document.querySelector('[data-pane=emo]').classList.contains('active'), recOn = document.querySelector('[data-pane=rec]').classList.contains('active');
+    if (!faceGateOn() || !(emoOn || recOn)) return;
+    const g = face.current(); if (!g) return;
+    const text = (t, x, y, col) => { ctx.save(); ctx.translate(x, y); ctx.scale(-1, 1); ctx.fillStyle = col; ctx.font = 'bold 14px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(t, 0, 0); ctx.restore(); };
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(150,200,255,.55)'; ctx.fillStyle = 'rgba(150,200,255,.8)';
+    ['top', 'chin', 'left', 'right'].forEach((k) => { const p = g.pts[k]; if (p) { ctx.beginPath(); ctx.arc(p[0], p[1], 3, 0, 6.3); ctx.fill(); } });
+    ctx.beginPath(); ctx.moveTo(g.pts.top[0], g.pts.top[1]); ctx.lineTo(g.pts.chin[0], g.pts.chin[1]); ctx.stroke();
+    if (!emoOn) return;
+    const sg = emo.signs.find((s) => s.id === emo.target), z = sg && FaceGate.zoneOf(sg.id, sg.stages[Math.min(emo.idx, sg.stages.length - 1)]);   // the zone of the frame being waited for (girl / home: cheek, then chin / mouth)
+    if (!z || !emo.gateNow) return;                  // no zone, or this frame has no face rule
+    const gt = emo.gateNow, col = gt && gt.ok ? '#58CC02' : '#FFD54A';
+    (z.cs || [z.c]).forEach((cc) => {                // cheek / mouth zones are drawn on both sides of the face
+      const c = FaceMath.fromFace(g, cc);
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.arc(c[0], c[1], z.r * g.H, 0, 6.3); ctx.stroke(); ctx.setLineDash([]);
+      text(z.zone + ' zone', c[0], c[1] - z.r * g.H - 8, col);
+    });
+    if (gt && gt.livePt) { const q = FaceMath.fromFace(g, gt.livePt); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(q[0], q[1], 6, 0, 6.3); ctx.fill(); }
+  }
+  setInterval(drawFace, 100);
+
+  // =============================================================
+  // DETECTOR STARTUP
+  // =============================================================
+
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    startBtn.textContent = 'Loading models…';
+
+    const detector = new GestureDetector({
+      videoEl: document.getElementById('gesture-video'),
+      canvasEl: document.getElementById('gesture-canvas'),
+      canvasMirrored: mirrorView,
+      enableMotionGestures: true,
+      maxHands: 2,
+      flipHandedness: true,   // the model labels a raw (unmirrored) frame backwards: left hand shown as Right
+      drawLabels: true,     // show #id next to each tracked hand
+      onHands: onHandsFrame, // per-frame multi-hand result (tracked ids, per-hand letter)
+      guideZones,            // fixed on-screen regions, drawn on the overlay (pick a layout in the Guide zones panel)
+      onZones: onZonesFrame,
+
+      // -------------------------------------------------------
+      // onGesture — called when the static pipeline confirms a letter,
+      // or when a motion detector completes a J/Z stroke (confidence=10).
+      // -------------------------------------------------------
+      onGesture: (name, confidence) => {
+        // J/Z are motion-only: ignore any static pipeline match (confidence < 10).
+        if (MOTION_LETTERS.has(name) && confidence < 10) return;
+
+        if (MOTION_LETTERS.has(name)) {
+          // Only accept a completed J/Z stroke if the "waiting for motion" prompt
+          // was actively showing for that letter. Prevents a stroke from silently
+          // firing when the waiting prompt was suppressed (e.g. the static pipeline
+          // had already resolved a different letter).
+          if (waitingForMotion !== name) return;
+
+          // Confirmed stroke — clear the waiting state and open the display window.
+          waitingForMotion = null;
+          for (const n of MOTION_LETTERS) delete motionRestingStart[n];
+          motionDisplayUntil = performance.now() + 1500; // mirrors gesture-detection.js _motionFreezeMs
+        } else {
+          // A new static gesture was confirmed. If J/Z is still in its display
+          // window, clear it immediately — the user has moved on.
+          if (performance.now() < motionDisplayUntil) {
+            motionDisplayUntil = 0;
+            latestResultName = null;
+            latestConfidence = null;
+          }
+        }
+
+        // While "waiting for motion" is active, silence every static result so
+        // random high-scoring letters don't overwrite the waiting prompt.
+        // Completed motion strokes (confidence === 10) have already cleared
+        // waitingForMotion above and fall through normally.
+        if (waitingForMotion && confidence < 10) return;
+
+        latestResultName = name;
+        latestConfidence = confidence;
+        refreshResult();
+      },
+
+      // -------------------------------------------------------
+      // onHandLost — reset all display and motion state.
+      // -------------------------------------------------------
+      onHandLost: () => {
+        latestResultName = null;
+        latestConfidence = null;
+        latestLandmarks  = null;
+        for (const name of MOTION_LETTERS) delete motionState[name];
+        for (const name of MOTION_LETTERS) delete motionRestingStart[name];
+        waitingForMotion   = null;
+        motionDisplayUntil = 0;
+        resultEl.textContent = '—';
+        confEl.textContent   = '';
+      },
+
+      onLandmarks: (landmarks) => {
+        latestLandmarks = landmarks;
+      },
+
+      // -------------------------------------------------------
+      // onMotionState — fired every frame by gesture-detection.js with
+      // { name, restingOk, motionMatched } for each motion detector.
+      // Drives the resting-start timer and the "waiting for motion" prompt.
+      // -------------------------------------------------------
+      onMotionState: ({ name, restingOk, motionMatched }) => {
+        const prev = motionState[name];
+        motionState[name] = { restingOk, motionMatched };
+
+        if (restingOk && !motionMatched) {
+          // Track when the resting pose first started (or restarted after a match).
+          // The prev.motionMatched check handles the case where the freeze window
+          // expired while the hand stayed in the resting pose — restarts the timer
+          // so "waiting for motion" can appear again for the next stroke.
+          if (!prev || !prev.restingOk || prev.motionMatched) {
+            motionRestingStart[name] = performance.now();
+          }
+        } else if (!restingOk) {
+          // Resting pose truly lost — clear the timer and the waiting state.
+          delete motionRestingStart[name];
+          if (waitingForMotion === name) {
+            waitingForMotion = null;
+            refreshResult();
+          }
+        }
+
+        // Skip updateWaitingState() when a stroke just completed.
+        // gesture-detection.js fires onMotionState({ motionMatched:true }) then
+        // onGesture() in the same tick. If updateWaitingState() ran here, it would
+        // see motionMatched:true → newWaiting=null → clear waitingForMotion before
+        // onGesture arrives, tripping onGesture's guard and silently dropping the result.
+        // onGesture is responsible for clearing waitingForMotion on a completed stroke.
+        if (!motionMatched) {
+          updateWaitingState();
+        }
+      },
+
+      onDebugScores: renderDebugScores,
+      onDebugMotion: renderDebugMotion,
+
+      onError: (err) => {
+        // Never surface errors on the result display — log only.
+        console.error('[GestureDetector]', err);
+      },
+    });
+
+    detectorRef = detector;
+    try {
+      await detector.start();
+    } catch (err) {
+      console.error('[GestureDetector] start failed', err);
+      detectorRef = null;
+      startBtn.disabled = false;
+      startBtn.textContent = 'Try again';
+      stageStartMsg.textContent = 'Could not start the camera (' + (err && err.name ? err.name : 'error') + '). Allow camera access in the browser bar and try again.';
+      return;
+    }
+    startBtn.textContent = 'Camera running';
+    faceStart();
+    stageStart.classList.add('hide');
+    setChip(chipCam, 'on', 'running');
+  });
+</script>
+
+</body>
+</html>
