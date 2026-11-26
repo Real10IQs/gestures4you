@@ -1,6 +1,6 @@
 # Gestures4You
 website that teach user about ASL gestures.
-[CLICK HERE]( https://real10iqz.github.io/gestures4you/)
+[CLICK HERE]( https://real10iqs.github.io/gestures4you/)
 ### AI DISCLAIMER
 every codes are mostly AI-written. debugging, art, directions, gestures data are done by human.
 ### Pictures Source
