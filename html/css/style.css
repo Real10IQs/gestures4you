@@ -1,0 +1,1239 @@
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --green:#58CC02;--green-dark:#4CAF00;--green-light:#D7FFB8;
+  --gold:#FFB800;--gold-light:#FFF0CC;
+  --blue:#1CB0F6;--blue-light:#DDF4FF;
+  --red:#FF4B4B;--red-light:#FFE5E5;
+  --purple:#CE82FF;--purple-light:#F3E6FF;
+  --orange:#FF9600;
+  --bg:#F7F7F7;--white:#FFFFFF;
+  --text:#3C3C3C;--text-soft:#777;--text-light:#AFAFAF;
+  --border:#E5E5E5;--border-dark:#D5D5D5;
+  --radius:16px;--radius-sm:10px;--radius-xs:6px;
+  --sidebar-w:260px;
+  --content-max:680px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{font-family:'Noto Sans Thai','Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;height:100%;overflow:hidden;}
+
+.app{display:flex;height:100vh;}
+.page{display:none;width:100%;height:100%;}
+.page.active{display:flex;}
+
+/* ===== AUTH ===== */
+.auth-wrap{
+  width:100%;display:flex;align-items:center;justify-content:center;
+  padding:32px 16px;background:var(--bg);min-height:100vh;
+}
+.auth-box{
+  width:100%;max-width:500px;animation:slideUpFade .35s ease;
+  background:var(--white);border-radius:var(--radius);
+  box-shadow:0 12px 32px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.04);
+  padding:36px 44px;position:relative;
+}
+.auth-close{
+  position:absolute;top:16px;right:16px;width:32px;height:32px;
+  border:none;background:none;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-light);font-size:18px;transition:.15s;
+}
+.auth-close:hover{background:var(--bg);color:var(--text);}
+.auth-logo{text-align:center;margin-bottom:28px;}
+.auth-logo h1{font-size:26px;font-weight:800;color:var(--green);letter-spacing:-0.5px;}
+.auth-logo p{color:var(--text-soft);font-size:14px;margin-top:4px;}
+/* .lb-tabs/.lb-tab (leaderboard XP<->score toggle, screen-rank) share
+   this exact pill-toggle look on purpose — same comma-joined rules so
+   any future tweak to the auth tab style applies to both automatically
+   instead of drifting apart into two near-duplicate designs. */
+.auth-tabs, .lb-tabs{display:flex;border-radius:var(--radius-sm);overflow:hidden;border:1.5px solid var(--border-dark);margin-bottom:24px;}
+.auth-tab, .lb-tab{flex:1;padding:12px;border:none;background:var(--white);font-size:14px;font-weight:700;cursor:pointer;color:var(--text-soft);transition:background .15s,color .15s;font-family:inherit;}
+.auth-tab.active, .lb-tab.active{background:var(--green);color:white;}
+/* Register<->login swap reuses the same slideUpFade entrance already
+   used elsewhere in the app (lesson feedback, screen switches — see
+   .lf-question) so the auth page
+   moves with the same "subtle motion" language as the rest of the
+   app rather than introducing a new one. Re-triggered on every tab
+   switch by toggling .auth-anim off/on in switchAuthTab() (app.js) —
+   an already-applied animation name won't restart on its own. */
+.auth-panel>div.auth-anim{animation:slideUpFade .3s ease;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:13px;font-weight:700;color:var(--text-soft);margin-bottom:6px;}
+.field label .req-mark{color:var(--red);font-weight:800;}
+.field input{width:100%;padding:13px 14px;border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;outline:none;transition:.15s;background:var(--white);}
+.field input:focus{border-color:var(--green);}
+.field input.invalid{border-color:var(--red);}
+.btn-main{width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit;}
+.btn-main:hover{background:var(--green-dark);}
+.or-row{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-light);font-size:13px;}
+.or-row::before,.or-row::after{content:'';flex:1;height:1px;background:var(--border);}
+.social-btns{display:flex;gap:10px;}
+.social-btn{flex:1;padding:12px;border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);background:white;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text);font-family:inherit;}
+.social-btn:hover{background:var(--bg);}
+
+
+/* ===== MAIN LAYOUT ===== */
+#page-main{flex-direction:row;}
+
+/* Sidebar desktop */
+.sidebar{
+  width:var(--sidebar-w);background:var(--white);border-right:1.5px solid var(--border);
+  padding:20px 12px;display:flex;flex-direction:column;flex-shrink:0;
+  height:100vh;position:sticky;top:0;
+}
+.s-logo{display:flex;align-items:center;gap:8px;padding:8px 10px 20px;border-bottom:1.5px solid var(--border);margin-bottom:12px;}
+.s-logo span{font-size:22px;}
+.s-logo strong{font-size:15px;font-weight:800;color:var(--green);letter-spacing:-0.3px;}
+.nav-btn{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  border-radius:var(--radius-sm);border:none;background:none;cursor:pointer;
+  font-size:14px;font-weight:600;color:var(--text-soft);width:100%;text-align:left;
+  transition:.15s;font-family:inherit;margin-bottom:4px;
+}
+.nav-btn:hover{background:var(--bg);color:var(--text);}
+.nav-btn.active{background:var(--green-light);color:var(--green-dark);}
+.nav-btn i{font-size:18px;}
+.s-foot{margin-top:auto;padding:12px 10px;border-top:1.5px solid var(--border);}
+.user-row{display:flex;align-items:center;gap:10px;}
+.avatar-sm{width:36px;height:36px;border-radius:50%;background:var(--green-light);object-fit:cover;flex-shrink:0;}
+.uname{font-weight:700;font-size:13px;color:var(--text);}
+.ulv{font-size:11px;color:var(--text-soft);}
+
+/* Center column */
+.center-col{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Main scroll area — centers content. perspective-origin's % is relative
+   to this element's own box (not the scrolled content), so with
+   overflow:auto the vanishing point stays pinned to the visible
+   viewport's center even while scrolling — used for the lesson path's
+   3D scroll-perspective effect (see .lesson-path / .lesson-row below,
+   and updateLessonPathPerspective() in app.js). */
+.main-area{flex:1;overflow-y:auto;perspective:1100px;perspective-origin:50% 50%;}
+.content-wrap{
+  max-width:var(--content-max);
+  margin:0 auto;
+  padding:28px 24px 80px;
+}
+
+/* Screens */
+.screen-inner{display:none;}
+.screen-inner.active{display:block;}
+
+/* ===== LEARN ===== */
+.unit-banner{display:flex;align-items:center;gap:14px;margin-bottom:28px;width:100%;}
+.unit-banner::before,.unit-banner::after{content:'';flex:1;height:1px;background:var(--border-dark,#D8D8D8);}
+.unit-banner .ub-text{text-align:center;white-space:nowrap;}
+.unit-banner h3{font-size:11px;color:var(--text-soft,#9B9B9B);font-weight:700;letter-spacing:.02em;margin-bottom:2px;}
+.unit-banner h2{font-size:14px;font-weight:800;color:var(--text-soft,#9B9B9B);letter-spacing:.02em;}
+/* Duolingo-style wave path: nodes are centered in a vertical column
+   and drift left/right via transform:translateX() set inline per-row
+   in app.js (a repeating 8-step offset pattern), giving the smooth
+   snaking curve instead of a strict left/right zig-zag. No chest,
+   no connector lines between nodes — just evenly spaced circles. */
+.lesson-path{display:flex;flex-direction:column;align-items:center;gap:26px;padding:8px 0 40px;transform-style:preserve-3d;}
+.lesson-node{
+  position:relative;width:68px;height:58px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  border:4px solid transparent;transition:transform .12s,box-shadow .12s,--pulse-offset .12s;
+}
+.lesson-node.done{background:var(--green);border-color:#4CAF00;box-shadow:0 9px 0 #3A9200;--press-shadow:#3A9200;}
+.lesson-node.done:hover{transform:translateY(-2px);box-shadow:0 11px 0 #3A9200;}
+.lesson-node.current{background:var(--green);border-color:#4CAF00;box-shadow:0 9px 0 #3A9200;animation:pulse 2s infinite;--pulse-offset:9px;--pulse-glow:#D7FFB8;--press-shadow:#3A9200;}
+/* The literal box-shadow value below is a harmless fallback only —
+   .current has `animation:pulse` running, and a CSS animation always
+   out-prioritizes a normal author rule for the property it's
+   animating (box-shadow), the same issue already solved for :active
+   further down via --pulse-offset. Without also setting
+   --pulse-offset here, hover's shadow stays stuck at the animation's
+   current mid-cycle value (visually: the shadow rides along rigidly
+   with the lifted cap instead of growing to stay anchored, unlike
+   every other hoverable node type). */
+.lesson-node.current:hover{transform:translateY(-2px);box-shadow:0 11px 0 #3A9200;--pulse-offset:11px;}
+@property --pulse-offset{syntax:'<length>';inherits:false;initial-value:9px;}
+@keyframes pulse{0%,100%{box-shadow:0 var(--pulse-offset) 0 var(--press-shadow)}50%{box-shadow:0 var(--pulse-offset) 0 var(--press-shadow),0 0 0 10px var(--pulse-glow)}}
+/* The pulse keyframe animation keeps running (and keeps overwriting
+   box-shadow every cycle) even while the node is being pressed, which
+   fought with the :active press shadow below and made the shadow look
+   like it was moving independently of the node — most visible on
+   test-node (red), since it's the only pulsing node with enough box-
+   shadow color difference to make the flicker obvious. Pausing the
+   animation on :active stops it from fighting the press state. */
+/* IMPORTANT: animation-play-state:paused (tried previously) is NOT
+   enough here — a paused animation still holds authority over the
+   property it animates (box-shadow), frozen at whatever value it was
+   mid-cycle when paused. CSS animations out-prioritize normal author
+   rules for the properties they touch regardless of selector
+   specificity, so the :active box-shadow override below was never
+   actually winning on any pulsing (.current) node — it just wasn't
+   obviously broken-looking on the green start node, since red
+   test-node made the "didn't shrink" mismatch much more visible.
+   Stopping the animation outright (animation:none) hands box-shadow
+   back to the normal cascade immediately, so the press shrink
+   actually shows. */
+/* Previous fix here was animation:none on :active, which stopped the
+   press box-shadow from being fought by the running pulse animation —
+   but it also killed the glow entirely while held, which felt wrong
+   (per feedback: the glow should stay alive during a press, it should
+   just pulse around the already-pressed-down shadow instead of the
+   resting one). Since the keyframes read box-shadow from --pulse-base
+   rather than a hardcoded value, redefining --pulse-base for :active is
+   enough to make the *running* animation itself use the pressed (2px)
+   shadow as its base — the glow keeps animating, it's just centered on
+   the smaller press shadow instead of the resting one. var(--press-
+   shadow) already resolves to the right color per node type.
+   Test-node.current is listed explicitly (not just .current) because
+   its own resting --pulse-base rule ties in specificity with a plain
+   .lesson-node.current:active selector — without the extra .test-node
+   qualifier here to out-specificity that tie, the resting 9px value
+   would keep winning for red test nodes specifically during a hold. */
+/* FOLLOW-UP FIX: the above made the *value* correct but the press still
+   looked like an abrupt snap instead of the smooth "pop down" every
+   other pressable node gets (.done, buttons, etc. all use the plain
+   `transition:box-shadow .12s` on .lesson-node) — most noticeable on
+   the red test-node since 9px->2px is a bigger jump against a brighter
+   glow. Reason: box-shadow here is driven by the running pulse
+   *animation*, and CSS transitions never apply to a property that's
+   currently owned by an animation, no matter how the property's value
+   changes. Fix: split the box-shadow's vertical offset out into its
+   own registered custom property (--pulse-offset, declared via
+   @property below so the browser knows it's a <length> and can
+   interpolate it), and transition THAT instead — transitions on custom
+   properties work fine, since the animation only owns `box-shadow`
+   itself, not `--pulse-offset`. The keyframes then read the
+   (now-transitioning) --pulse-offset every frame, so the shadow eases
+   from 9px down to 2px exactly like a non-pulsing node's press, while
+   the glow ring keeps animating on top of it same as before. */
+.lesson-node.current:active,.lesson-node.test-node.current:active{
+  --pulse-offset:2px;
+}
+.lesson-node.locked{background:#E5E5E5;border-color:#CFCFCF;box-shadow:0 9px 0 #BDBDBD;cursor:not-allowed;}
+.lesson-node i{font-size:28px;color:white;position:relative;z-index:1;}
+.lesson-node.locked i{color:#BDBDBD;}
+.node-label{position:absolute;top:-26px;left:50%;transform:translateX(-50%);background:var(--text);color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;}
+
+/* Each main lesson node is wrapped in a "row" that's really just a
+   positioning anchor (shrink-wrapped, same size as the node itself)
+   so a trailing bonus node can be absolutely positioned beside it
+   without affecting the vertical flow/spacing of the main path. The
+   row's transform:translateX (set inline in app.js) is what produces
+   the wave offset. Height matches the oval node's footprint (incl.
+   the shadow "side" of the puck) so nothing below it gets cramped. */
+/* backface-visibility:hidden here is a standard fix for the blurry text/
+   icons that showed up on receded (scaled-down) rows: it forces the
+   browser to promote the row to its own compositing layer and snap it to
+   the pixel grid on paint, instead of leaving a fractionally-scaled
+   sub-pixel box to be resampled in place. Combined with removing rotateX
+   (see updateLessonPathPerspective() in app.js — that was the bigger
+   contributor, since its perspective foreshortening compounded with
+   scale() to produce non-uniform, harder-to-resample scaling), this
+   should make the shrink-zone rows noticeably crisper. */
+.lesson-row{position:relative;width:68px;height:67px;transition:none;transform-style:preserve-3d;will-change:transform;backface-visibility:hidden;}
+/* Info nodes are smaller (40px + 6px shadow = 46px footprint vs 58px + 9px = 67px
+   for main nodes). Give info rows their own height so gap:26px produces the same
+   visual breathing room relative to node size as it does for main nodes.
+   Centered via flexbox (not absolute+transform) specifically so the node's own
+   hover/:active transform can be a plain translateY like every other node type
+   — see the info-node hover/:active rules below for why that matters. */
+/* align-items:flex-start: node (40px) + 6px shadow = 46px = row height, so the visual puck fills the row exactly and gaps above/below are equal (centering pushed it 3px down, making the gap to the next node look tight). */
+.lesson-row.info-row{height:46px;display:flex;align-items:flex-start;justify-content:center;}
+.lesson-row .lesson-node{margin:0;}
+
+/* Bonus nodes: smaller, gold, optional side content. Anchored to
+   whichever side is free next to the main node (away from center). */
+.lesson-node.bonus-node{
+  position:absolute;top:50%;width:44px;height:38px;
+  background:var(--gold);border-color:#E5A500;box-shadow:0 6px 0 #BF8A00;
+  transform:translateY(-50%);z-index:1;
+}
+.lesson-node.bonus-node.bonus-right{left:calc(100% + 14px);}
+.lesson-node.bonus-node.bonus-left{right:calc(100% + 14px);}
+.lesson-node.bonus-node i{font-size:18px;}
+/* Completed bonus (can't redo) — a prior round gave this a distinct
+   muted color so it wouldn't look identical to .bonus-locked's gray.
+   Latest feedback: a finished bonus node should look the same as an
+   unfinished/available one (same vivid gold), just non-interactive —
+   so this no longer overrides background/border/box-shadow at all and
+   just inherits the base .bonus-node gold. cursor:not-allowed is the
+   only thing keeping it from feeling clickable. */
+.lesson-node.bonus-node.bonus-done{
+  cursor:not-allowed;
+}
+/* Locked bonus: paired main node not yet completed */
+.lesson-node.bonus-node.bonus-locked{
+  background:#E5E5E5;border-color:#CFCFCF;box-shadow:0 6px 0 #BDBDBD;cursor:not-allowed;
+}
+.lesson-node.bonus-node.bonus-locked i{color:#BDBDBD;}
+
+/* Star rating badge for a COMPLETED bonus node — sits just outside the
+   node's own right edge (bonus nodes are only ever placed .bonus-right
+   in practice, see applyBonusNodeState() in app.js). Left empty
+   (no innerHTML) for not-yet-done nodes, so it takes no visual space
+   until there's something to show. 0-3 filled stars, derived from the
+   stored lesson score (2 questions per bonus node → 0/50/100%) via
+   Math.round(score/100*3) in applyBonusNodeState(). */
+.bonus-stars{position:absolute;top:50%;left:100%;transform:translateY(-50%);margin-left:6px;display:flex;gap:1px;white-space:nowrap;}
+.bonus-stars i{font-size:11px;color:#DCDCDC;}
+.bonus-stars i.filled{color:var(--gold);}
+
+/* Test nodes: red-tinted, to signal "has a health system" */
+.lesson-node.test-node.current,.lesson-node.test-node.done{
+  background:var(--red);border-color:#C73333;box-shadow:0 9px 0 #C73333;
+  --pulse-glow:#FFD2D2;--press-shadow:#C73333;
+}
+/* Without this, .current:hover / .done:hover above would win on specificity
+   ties in source order but the wrong color — test nodes need their own red
+   hover lift, not the green one meant for normal lesson nodes. */
+.lesson-node.test-node.current:hover,.lesson-node.test-node.done:hover{
+  /* --pulse-offset only affects .test-node.current (the pulsing one) —
+     .test-node.done has no animation reading it, so it's a harmless
+     no-op there. Same reasoning as the plain .current:hover fix above:
+     without this, test-node.current's shadow stays stuck at 9px on
+     hover instead of growing to 11px, since the running pulse
+     animation owns box-shadow and out-prioritizes this rule's literal
+     value. */
+  transform:translateY(-2px);box-shadow:0 11px 0 #C73333;--pulse-offset:11px;
+}
+
+/* Info nodes: optional preview of the letters a normal lesson is about
+   to cover. Own row (not anchored beside another node like bonus), but
+   visually smaller/quieter since it's skippable and never "completes". */
+.lesson-node.info-node{
+  width:46px;height:40px;background:var(--blue);border-color:#2F7FE0;
+  box-shadow:0 6px 0 #2466BD;--press-shadow:#2466BD;
+}
+/* Now that .info-row centers via flexbox (see above) instead of
+   absolute+transform, the node's own resting transform is unset — same
+   as .done/.current/.test-node — so hover can be a plain translateY(-2px)
+   here too, instead of the translate(-50%, calc(...)) composition hack
+   this used to need. That composed transform was producing a visibly
+   different hover motion from every other node type (the reported bug);
+   this makes info nodes lift exactly the same way, just with their own
+   blue shadow color/2px-of-6px magnitude. */
+.lesson-node.info-node:not(.locked):hover{transform:translateY(-2px);box-shadow:0 8px 0 #2466BD;}
+.lesson-node.info-node i{font-size:19px;}
+/* Locked info node: override blue with the same gray as .locked main nodes */
+.lesson-node.info-node.locked{
+  background:#E5E5E5;border-color:#CFCFCF;box-shadow:0 6px 0 #BDBDBD;cursor:not-allowed;
+}
+.lesson-node.info-node.locked i{color:#BDBDBD;}
+
+/* Info-node preview grid (rendered inside the lesson-fullscreen overlay) */
+.lf-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-top:clamp(16px,3vh,28px);}
+.lf-info-card{display:flex;flex-direction:column;align-items:center;gap:8px;}
+/* Was `max-width:140px` while still inheriting the base `.lf-q-image`
+   rule's fixed `height:clamp(160px,23vh,210px)` — a fixed height plus a
+   narrow max-width fought the `aspect-ratio:4/3` from the base rule, so
+   the picture rendered narrower than its aspect ratio wanted, i.e.
+   smaller than intended. Switching to `width:100%` (fill the grid
+   cell, which is now wider too — see `.lf-info-grid` above) + `height:
+   auto` lets `aspect-ratio` size the box correctly off the width
+   instead, so it scales up cleanly with the wider grid cell. */
+.lf-info-card .lf-q-image{margin:0;width:100%;max-width:190px;height:auto;}
+.lf-info-letter{font-size:22px;font-weight:800;color:var(--text);}
+
+/* ===== ACHIEVEMENTS =====
+   .quest-hero/.trophy-icon are the shared purple header banner —
+   name kept from the old daily-quest tab this screen replaced (see
+   html/index.html's #screen-achievements), still exactly the same
+   visual, just re-purposed with different text/subtext above it. */
+.quest-hero{background:linear-gradient(135deg,#7C3AED,#9C27B0);color:white;border-radius:var(--radius);padding:22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.quest-hero h2{font-size:20px;font-weight:800;margin-bottom:4px;}
+.quest-hero p{font-size:13px;opacity:.85;line-height:1.5;}
+.trophy-icon{font-size:52px;flex-shrink:0;}
+.ach-card{position:relative;background:var(--white);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;
+  /* Border swapped for a drop shadow — .ach-card no longer has a
+     visible border at all; card separation now comes purely from the
+     shadow + the gap between rows. Hover lifts the card slightly and
+     deepens the shadow (see .ach-card.ach-in-view:hover below — only
+     cards already popped into view respond to hover). */
+  box-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  /* Scroll reveal (see setupAchievementsScrollReveal() in app.js,
+     which toggles .ach-in-view via IntersectionObserver). Two-way:
+     cards pop in on entering view and pop back out on leaving, in
+     either scroll direction — not a one-time reveal. */
+  opacity:0;transform:translateY(14px) scale(.96);
+  transition:opacity .35s ease,transform .35s cubic-bezier(.2,.8,.3,1),box-shadow .2s ease;
+}
+.ach-card.ach-in-view{opacity:1;transform:translateY(0) scale(1);}
+.ach-card.ach-in-view:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 8px 20px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.06);}
+/* Row holding icon + title/desc + a right-hand status column. The
+   status column (.ach-side) replaces the old full-width bar that used
+   to sit below this row as a separate sibling — a locked/trackable
+   achievement's progress bar, an unlocked achievement's "สำเร็จ
+   แล้ว" checkmark, and a disqualified achievement's reset note all
+   live inside this same fixed-width column now, so every card is
+   exactly one row tall regardless of which of the three it shows. */
+.ach-row{display:flex;align-items:center;gap:14px;}
+.ach-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.ach-body{flex:1;min-width:0;}
+.ach-side{flex-shrink:0;width:104px;}
+.ach-bar{height:8px;background:var(--border);border-radius:999px;overflow:hidden;}
+.ach-bar-fill{height:100%;border-radius:999px;transition:width .25s ease;background:var(--border-dark);}
+.ach-progress-label{font-size:11px;color:var(--text-soft);margin-top:4px;text-align:right;}
+/* Replaces the old green "✓ สำเร็จ" tag — same checkmark icon, but
+   worded "สำเร็จแล้ว" and in the same grey used for meta text
+   elsewhere (.ach-meta), rather than a colored badge, since the
+   right-hand column is meant to read as a quiet status indicator, not
+   another loud accent alongside the already-green unlocked icon. */
+.ach-status{font-size:12px;font-weight:700;color:var(--text-soft);display:flex;align-items:center;justify-content:flex-end;gap:4px;white-space:nowrap;}
+.locked-ach{background:var(--bg);}
+.locked-ach h4{color:var(--text-soft);}
+.ach-body h4{font-size:15px;font-weight:700;margin-bottom:4px;}
+.ach-meta{font-size:12px;color:var(--text-soft);}
+/* "???" mystery card for hidden achievements (currently just
+   'secret_unlock') pre-unlock — same .locked-ach base, just the
+   title styled a touch differently so it reads as intentionally
+   withheld rather than merely "not done yet". */
+.hidden-ach h4{font-style:italic;color:var(--text-light);}
+/* Achievements with a "without ever X" condition (Veteran/No Hit
+   Gaming — kind:'no_info_all'/'no_wrong_all' in the ACHIEVEMENTS
+   array) become permanently unearnable the moment their disqualifying
+   event happens (a wrong answer / opening an info node), short of a
+   full progress reset — see computeAchievementStatus()'s
+   `disqualified` flag. Crossed-out title/description so this reads as
+   "gone for this run", distinct from a normal .locked-ach still worth
+   working toward. */
+.disqualified-ach h4,.disqualified-ach .ach-meta{text-decoration:line-through;text-decoration-color:var(--text-light);color:var(--text-light);}
+.ach-disqualified-note{display:flex;align-items:flex-start;justify-content:flex-end;gap:4px;font-size:10px;color:var(--text-light);line-height:1.3;text-align:right;}
+
+/* ===== LEADERBOARD ===== */
+.screen-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.screen-sub{font-size:14px;color:var(--text-soft);margin-bottom:20px;}
+#lb-list{transition:opacity .18s ease;}
+#lb-list.lb-swap{opacity:0;}
+@keyframes lbRowIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:47px;box-sizing:border-box;border-radius:var(--radius-sm);margin-bottom:8px;background:var(--white);border:1.5px solid var(--border);animation:lbRowIn .35s ease both;transition:transform .15s linear,opacity .15s linear;will-change:transform;}
+.lb-row.me{background:var(--blue-light);border-color:var(--blue);}
+.lb-rank{font-size:16px;font-weight:800;width:34px;text-align:center;flex-shrink:0;}
+.lb-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg);}
+.lb-name{flex:1;font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lb-xp{font-weight:800;color:var(--text-soft);font-size:14px;flex-shrink:0;}
+.lb-xp span{color:var(--green);}
+.lb-guest-note{text-align:center;font-size:13px;color:var(--text-soft);padding:14px 16px 4px;}
+
+/* ===== LEADERBOARD SKELETON (loading placeholder) =====
+   Shown immediately when renderLB() starts a fetch (initial load AND
+   every time the rank tab is opened), replaced once real data (or the
+   data.js fallback) resolves — same idea as YouTube's gray shimmering
+   placeholder rows instead of a blank list or a jarring pop-in.
+   Bars are sized/positioned to match a real .lb-row's rank/name/xp as
+   closely as CSS bars can — matching `min-height`/padding/border on
+   the row itself (so the swap-in never visibly jumps in height), and
+   bar widths/heights tuned to the actual rendered size of the text
+   they stand in for (.lb-rank's 16px/800-weight text ~19px tall,
+   .lb-name/.lb-xp's 14px text ~17px tall — not the same as those
+   elements' font-size, since line-height adds a few px on top). */
+.lb-skel-row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:47px;box-sizing:border-box;border-radius:var(--radius-sm);margin-bottom:8px;background:var(--white);border:1.5px solid var(--border);}
+.lb-skel-bar{
+  border-radius:6px;
+  background:linear-gradient(90deg,var(--border) 25%,var(--border-dark) 37%,var(--border) 63%);
+  background-size:400% 100%;
+  animation:lbSkelShimmer 1.4s ease-in-out infinite;
+}
+.lb-skel-rank{width:34px;height:19px;flex-shrink:0;}
+.lb-skel-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;}
+.lb-skel-name{flex:1;height:17px;max-width:140px;}
+.lb-skel-xp{width:60px;height:17px;flex-shrink:0;}
+@keyframes lbSkelShimmer{
+  0%{background-position:100% 0;}
+  100%{background-position:0 0;}
+}
+
+/* ===== PROFILE ===== */
+.profile-top{position:relative;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:26px;margin-bottom:16px;text-align:center;}
+/* Settings dropdown (reset progress / delete account) — pinned to the
+   card's top-right corner so those two actions stop competing for
+   visual weight with the rest of the profile screen. Click-only
+   toggle (toggleProfileSettings() in app.js); closes on outside
+   click (see the document click listener in app.js). */
+.profile-settings-wrap{position:absolute;top:14px;right:14px;z-index:5;}
+.profile-settings-btn{width:36px;height:36px;border-radius:50%;background:var(--white);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft);font-size:16px;transition:.15s;}
+.profile-settings-btn:hover{background:var(--bg);color:var(--text);}
+.profile-settings-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:210px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 10px 28px rgba(0,0,0,.14);overflow:hidden;text-align:left;flex-direction:column;}
+.profile-settings-menu.open{display:flex;}
+.ps-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:12px 14px;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;color:var(--text);transition:.15s;}
+.ps-menu-item+.ps-menu-item{border-top:1px solid var(--border);}
+.ps-menu-warn{color:var(--orange);}
+.ps-menu-warn:hover{background:#FFF3E0;}
+.ps-menu-danger{color:var(--red);}
+.ps-menu-danger:hover{background:var(--red-light);}
+.profile-avatar{width:84px;height:84px;border-radius:50%;background:var(--blue-light);object-fit:cover;margin:0 auto 12px;border:4px solid var(--blue);display:block;}
+.profile-top h2{font-size:20px;font-weight:800;}
+.level-tier-badge{display:inline-block;margin-top:4px;padding:3px 12px;border-radius:999px;background:var(--blue-light);color:var(--blue);font-size:12px;font-weight:800;}
+.join-date{color:var(--text-soft);font-size:13px;margin-top:2px;}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.p-stat{background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center;}
+.p-stat .num{font-size:24px;font-weight:800;}
+.p-stat .lbl{font-size:12px;color:var(--text-soft);margin-top:2px;}
+/* Small XP-to-next-level bar under the level/XP stat boxes above —
+   deliberately thinner than .lf-progress-track (the in-lesson question
+   progress bar) so it reads as a secondary/ambient stat rather than
+   competing with it; same rounded-pill + green-fill + width-transition
+   language as that bar though, so the two still feel like one family. */
+.level-progress-wrap{margin-top:12px;}
+.level-progress-track{height:6px;background:var(--border);border-radius:999px;overflow:hidden;}
+.level-progress-fill{height:100%;background:var(--green);border-radius:999px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.level-progress-label{font-size:11px;color:var(--text-soft);margin-top:6px;text-align:center;}
+.profile-actions{display:flex;gap:10px;margin-top:18px;}
+.btn-save{padding:12px 20px;background:var(--green);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
+.btn-save:hover{background:var(--green-dark);}
+.btn-logout{padding:12px 20px;background:var(--red-light);color:var(--red);border:1.5px solid #FFCACA;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
+.btn-logout:hover{background:var(--red);color:white;}
+/* btn-warn / btn-danger-outline: reset-progress and delete-account
+   used to be full-width buttons of their own down here (see previous
+   handoffs) — that's now a dropdown off .profile-settings-btn instead
+   (.ps-menu-item/.ps-menu-warn/.ps-menu-danger above), so
+   .profile-danger-zone is gone. Kept these two classes defined in
+   case anything else ever wants a standalone warn/danger button. */
+.btn-warn{padding:12px 20px;background:#FFF3E0;color:#B45900;border:1.5px solid #FFD699;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
+.btn-warn:hover{background:var(--orange);color:white;border-color:var(--orange);}
+.btn-danger-outline{padding:12px 20px;background:var(--white);color:var(--red);border:1.5px solid var(--red);border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
+.btn-danger-outline:hover{background:var(--red);color:white;}
+.section-head{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);margin-bottom:12px;}
+/* align-items:start below stops CSS grid's default row-stretch
+   behavior: without it, every card in a row is stretched to match
+   the tallest card in that row — so when .ap-card:hover grows one
+   card's .ap-desc open (see .ap-card:hover .ap-desc further down),
+   its *siblings* in the same grid row silently grew taller too (an
+   empty stretch, not a real content reveal), which read as "every
+   card expands on hover" even though only the hovered card's
+   description was actually showing. align-items:start makes each
+   card size to its own content instead of the row's max. */
+.ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px;align-items:start;}
+
+/* Profile screen's "latest 3 unlocked" preview cards (#profile-ach-preview,
+   filled in by renderProfileAchievementPreview() in app.js) — sits inside
+   the same .ach-grid used above, but with its own class names rather
+   than reusing .ach-card/.ach-icon/etc, since those are already a
+   collision between two unrelated layouts elsewhere in this file (see
+   the comment above renderProfileAchievementPreview()). Vertical
+   icon-then-name layout; description is hidden by default and only
+   revealed on hover — a max-height+opacity transition rather than
+   display:none/block so it grows in smoothly instead of popping. */
+.ap-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:16px 10px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;transition:border-color .15s;}
+.ap-card:hover{border-color:var(--green);}
+.ap-icon{width:44px;height:44px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--green-dark);flex-shrink:0;}
+.ap-name{font-size:12.5px;font-weight:700;line-height:1.3;}
+.ap-desc{font-size:11px;color:var(--text-soft);line-height:1.4;max-height:0;opacity:0;margin-top:0;overflow:hidden;transition:max-height .2s ease,opacity .2s ease,margin-top .2s ease;}
+.ap-card:hover .ap-desc{max-height:60px;opacity:1;margin-top:2px;}
+
+/* Profile edit */
+.edit-back-btn{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;}
+.edit-section{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.edit-section h3{font-size:15px;font-weight:800;margin-bottom:16px;}
+.edit-avatar-wrap{position:relative;width:84px;margin:0 auto 16px;cursor:pointer;}
+.edit-badge{position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;border:2px solid white;}
+.edit-badge i{font-size:13px;color:white;}
+.avatar-picker{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.av-opt{width:46px;height:46px;border-radius:50%;border:2.5px solid transparent;background:var(--bg);padding:0;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.av-opt img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.av-opt:hover{border-color:var(--green-dark);background:var(--green-light);}
+.av-opt.sel{border-color:var(--green);background:var(--green-light);}
+.edit-field{margin-bottom:14px;}
+.edit-field label{display:block;font-size:12px;font-weight:700;color:var(--text-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
+.edit-field input{width:100%;padding:12px 14px;border:1.5px solid var(--border-dark);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;outline:none;transition:.15s;background:var(--white);}
+.edit-field input:focus{border-color:var(--green);}
+
+/* ===== PRESS / TAP ANIMATIONS ===== */
+@keyframes pressDown{0%{transform:scale(1)}50%{transform:scale(.94)}100%{transform:scale(1)}}
+@keyframes popIn{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+@keyframes popCelebrate{0%{transform:scale(.6) rotate(-8deg);opacity:0}60%{transform:scale(1.08) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes slideUpFade{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes barFillGrow{from{width:0}}
+.btn-main, .social-btn, .guide-btn, .btn-save, .btn-logout, .btn-warn, .btn-danger-outline, .btn-cancel, .btn-confirm-red, .lesson-node, .nav-btn, .bnav-btn, .av-opt, .quiz-opt, .auth-tab, .lb-tab{
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-main:active, .social-btn:active, .guide-btn:active, .btn-save:active, .btn-logout:active, .btn-warn:active, .btn-danger-outline:active, .btn-cancel:active, .btn-confirm-red:active, .av-opt:active{
+  animation:pressDown .18s ease;
+}
+.lesson-node:not(.locked):not(.bonus-done):not(.bonus-locked):active{transform:translateY(3px) scale(.97);box-shadow:0 2px 0 var(--press-shadow,#999);}
+/* Info nodes no longer need their own :active override — now that
+   .info-row centers via flexbox instead of absolute+transform (see
+   above), the generic press rule right above this already produces the
+   identical result: info-node's --press-shadow is already #2466BD (set
+   in its base rule), and there's no resting transform left to preserve. */
+/* Bonus nodes had no hover feedback at all (reported bug #2) — add one,
+   same magnitude as info nodes' (2px lift / 6px→8px shadow, since both
+   share the same shallower 6px resting shadow). Must re-state the resting
+   translateY(-50%) here too, same composition reasoning as bonus's own
+   :active rule below — a bare translateY(-2px) would replace the side-
+   anchor centering instead of adding to it. */
+.lesson-node.bonus-node:not(.bonus-done):not(.bonus-locked):hover{
+  transform:translateY(calc(-50% - 2px));box-shadow:0 8px 0 #BF8A00;
+}
+/* Bonus nodes have a shallower resting shadow (6px vs 9px for main nodes),
+   so the generic press rule above (translateY(3px), i.e. half the main-node
+   shadow) pushed a bonus node down by HALF of its own, much shorter shadow —
+   proportionally about 2x deeper-looking than the same press on a main
+   node. Scaled down to match: 2px of a 6px shadow ≈ the same ~1/3 press
+   depth main nodes get. */
+.lesson-node.bonus-node:not(.bonus-done):not(.bonus-locked):active{
+  /* Must re-state the resting translateY(-50%) here too — a bare
+     translateY(2px) would REPLACE it instead of adding to it, dragging
+     the node up out of its vertically-centered position while held. */
+  transform:translateY(calc(-50% + 2px)) scale(.97);box-shadow:0 4px 0 #BF8A00;
+}
+.quiz-opt:not(:disabled):active{transform:scale(.97);}
+.auth-tab:active, .lb-tab:active{transform:scale(.96);}
+
+/* ===== FULLSCREEN LESSON (Duolingo-style) ===== */
+.lesson-fullscreen{
+  position:fixed;inset:0;background:var(--white);z-index:150;
+  display:flex;flex-direction:column;
+  animation:slideUpFade .25s ease;
+}
+.lf-header{
+  display:flex;align-items:center;gap:14px;padding:14px 20px clamp(8px,1.4vh,14px);flex-shrink:0;
+}
+.lf-close{background:none;border:none;cursor:pointer;color:var(--text-light);padding:4px;display:flex;align-items:center;transition:.15s;border-radius:50%;}
+.lf-close:hover{color:var(--text-soft);background:var(--bg);}
+.lf-close i{font-size:24px;}
+.lf-progress-track{flex:1;height:14px;background:var(--border);border-radius:999px;overflow:hidden;}
+.lf-progress-fill{height:100%;background:var(--green);border-radius:999px;transition:width .4s cubic-bezier(.4,0,.2,1);animation:barFillGrow .4s cubic-bezier(.4,0,.2,1);}
+.lf-hearts{display:flex;align-items:center;gap:5px;font-weight:800;color:var(--red);font-size:15px;flex-shrink:0;}
+.lf-hearts i{font-size:19px;}
+/* DEBUG ONLY — hidden unless the secret DEVMODE key combo (see app.js)
+   has toggled `devmode-on` on <body>. Matching markup/comment in
+   index.html. */
+.lf-debug-btn{display:none;background:#FFF0CC;border:1.5px solid var(--gold);color:#B38000;border-radius:50%;width:34px;height:34px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-family:inherit;}
+body.devmode-on .lf-debug-btn{display:flex;}
+.lf-debug-btn:hover{background:var(--gold);color:white;}
+.lf-debug-btn i{font-size:16px;}
+/* Dev-mode "force unlock" button on an achievement card (see
+   renderAchievements()/forceUnlockAchievement() in app.js). Same
+   hidden-unless-devmode-on treatment and gold "debug" look as
+   .lf-debug-btn above, just absolutely-positioned into the card's
+   top-right corner (.ach-card is position:relative) instead of sitting
+   inline, since ach-row's layout (icon/body/side) has no natural slot
+   for a 4th item. Only rendered at all for still-locked cards — see
+   the p.unlocked guard at the call site. */
+.ach-debug-btn{display:none;position:absolute;top:8px;right:8px;background:#FFF0CC;border:1.5px solid var(--gold);color:#B38000;border-radius:50%;width:28px;height:28px;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;z-index:1;}
+body.devmode-on .ach-debug-btn{display:flex;}
+.ach-debug-btn:hover{background:var(--gold);color:white;}
+.ach-debug-btn i{font-size:14px;}
+/* .lf-body already fills exactly the viewport height available below
+   the header/footer (flex:1 inside .lesson-fullscreen's fixed inset:0
+   column) — the "cause page scroll" bug wasn't that, it was that a qa
+   question's *content* (title row + question + image + 5 opts) was
+   sized with flat px padding/margins that added up to more than that
+   available space on most realistic screen heights, forcing
+   overflow-y:auto to kick in basically always. The fix below scales
+   the vertical spacing (padding/margins/gaps, plus the question image's
+   height) with clamp(min,vh,max) instead of a fixed px, so the layout
+   compresses on shorter viewports and expands (up to the original px
+   values) on taller ones. overflow-y:auto is left as-is — it's still
+   exactly the right fallback for a viewport too short to fit all 5
+   choices even at the clamped minimum sizes; it just no longer
+   triggers on ordinary-sized screens where it fits comfortably. */
+.lf-body{
+  flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+  padding:clamp(12px,2vh,20px) 24px clamp(12px,2.4vh,28px);
+}
+.lf-body-inner{width:100%;max-width:560px;margin:0 auto;}
+.lf-title{font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;}
+/* Row that holds the lesson title and (when present) the redo pill.
+   The pill used to be absolutely positioned flush against the right
+   edge of this row, which put it nowhere near the (short, left-aligned)
+   title text — reported as needing to sit beside the title instead.
+   Back to normal in-flow `display:flex` with a small `gap` so the pill
+   sits right next to the title text. To avoid reintroducing the old
+   "pill showing up adds height and pushes everything below it down"
+   bug, the row is given a `min-height` equal to the pill's own fixed
+   height (see `.lf-redo-pill` below) — so the row is exactly that tall
+   whether or not the pill is actually present. */
+.lf-q-header{position:relative;display:flex;align-items:center;gap:8px;min-height:24px;margin-bottom:8px;}
+/* Shown on a question that's being redone after a wrong answer earlier
+   in the same attempt (see requeueMissedOrFinish()/redoIds in app.js),
+   so it's visually clear this isn't a fresh question. Uses a fixed
+   `height` (instead of vertical padding) so its rendered height is
+   exact and predictable — it has to match `.lf-q-header`'s
+   `min-height` above precisely for the "no layout shift" trick to
+   work. */
+.lf-redo-pill{display:inline-flex;align-items:center;gap:6px;height:24px;flex-shrink:0;background:var(--red-light);color:#D93737;font-weight:700;font-size:12px;padding:0 12px;border-radius:999px;white-space:nowrap;animation:popIn .3s ease;}
+.lf-redo-pill i{font-size:14px;}
+.lf-question{font-size:22px;font-weight:800;line-height:1.4;margin-bottom:clamp(10px,2.2vh,22px);animation:popIn .3s ease;}
+.lf-opts{display:flex;flex-direction:column;gap:clamp(6px,1vh,10px);}
+/* object-fit:contain (not cover) on purpose — the gesture reference
+   photos in assets/gestures/ come in inconsistent sizes/aspect ratios,
+   and `cover` was cropping the overflow to force them into this box's
+   fixed 4:3 shape, which on some photos cut straight through part of
+   the hand shape itself. `contain` always shows the whole photo
+   (shrunk to fit within the box, never cropped); any leftover space
+   around a photo that isn't naturally 4:3 gets letterboxed with the
+   `background` below instead. The box's own size is unaffected either
+   way — it's already fixed by `height`/`aspect-ratio`/`max-width`
+   here, not by the source photo's dimensions. */
+.lf-q-image{display:block;width:auto;height:clamp(160px,23vh,210px);max-width:340px;aspect-ratio:4/3;object-fit:contain;border-radius:var(--radius);margin:0 auto clamp(10px,1.8vh,18px);background:var(--bg);}
+.lf-q-image-placeholder{display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--text-soft);border:2px dashed var(--border);}
+.lf-opt{
+  width:100%;padding:clamp(9px,1.7vh,16px) 20px;border:2px solid var(--border);border-radius:14px;
+  background:white;font-size:16px;font-weight:600;cursor:pointer;text-align:left;
+  font-family:inherit;transition:border-color .15s,background .15s,color .15s,transform .1s;
+}
+.lf-opt:hover:not(:disabled){border-color:var(--blue);background:var(--blue-light);}
+.lf-opt.correct{border-color:var(--green);background:var(--green-light);color:var(--green-dark);animation:popIn .25s ease;}
+.lf-opt.wrong{border-color:var(--red);background:var(--red-light);color:var(--red);animation:shakeX .4s ease;}
+.lf-opt:disabled{cursor:default;}
+.lf-footer{
+  flex-shrink:0;padding:clamp(8px,1.6vh,14px) 24px;border-top:1.5px solid var(--border);
+  display:flex;justify-content:center;
+}
+.lf-footer-inner{width:100%;max-width:560px;display:flex;justify-content:flex-end;}
+.lf-footer.fb-correct{background:var(--green-light);border-top-color:#BCE89A;}
+.lf-footer.fb-wrong{background:var(--red-light);border-top-color:#FFC4C4;}
+.lf-feedback{display:none;align-items:center;gap:10px;font-weight:800;font-size:15px;flex:1;}
+.lf-footer.fb-correct .lf-feedback{display:flex;color:var(--green-dark);}
+.lf-footer.fb-wrong .lf-feedback{display:flex;color:var(--red);}
+.lf-feedback i{font-size:24px;}
+.lf-continue-btn{
+  padding:14px 36px;border-radius:var(--radius-sm);border:none;font-size:15px;font-weight:800;
+  cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.03em;
+  background:var(--border-dark);color:white;transition:.15s;
+}
+.lf-continue-btn.enabled{background:var(--green);}
+.lf-continue-btn.enabled:hover{background:var(--green-dark);}
+.lf-continue-btn:disabled{cursor:not-allowed;}
+/* popCelebrate overshoots to scale(1.08) at its 60% mark (see keyframes
+   above) — briefly making .lf-result-wrap taller than #lf-body's box,
+   which triggers #lf-body's overflow-y:auto and flashes a scrollbar for
+   the ~0.1s the overshoot lasts. Result content is short and fixed
+   (emoji/score/text/button), so it never legitimately needs to scroll;
+   suppressing overflow specifically while a .lf-result-wrap is present
+   removes the flash without touching overflow-y:auto for the qa/gesture
+   question screens, which still need it. */
+#lf-body:has(.lf-result-wrap){overflow:hidden;}
+.lf-result-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:20px;animation:popCelebrate .45s ease;}
+.lf-result-emoji{font-size:64px;margin-bottom:8px;}
+.lf-result-num{font-size:56px;font-weight:800;color:var(--green);}
+/* 3-star rating shown under a bonus lesson's percentage on the finish
+   screen — see bonusStarCount() in app.js. Bigger than .bonus-stars
+   (the in-path badge) since this is a standalone result rather than a
+   small accent beside a 44px node. */
+.lf-result-stars{display:flex;gap:4px;margin-top:8px;}
+.lf-result-stars i{font-size:22px;color:var(--border);}
+.lf-result-stars i.filled{color:var(--gold);}
+.lf-result-wrap p{color:var(--text-soft);font-size:16px;margin-top:6px;}
+.lf-xp-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold-light);color:#B38000;font-weight:700;padding:11px 22px;border-radius:999px;margin-top:18px;font-size:16px;}
+.lf-guest-note{display:inline-flex;align-items:center;gap:6px;background:var(--blue-light);color:var(--blue);font-weight:700;padding:11px 22px;border-radius:999px;margin-top:18px;font-size:14px;text-align:center;}
+
+
+/* Subtle entrance for the translate screen's content, matching the
+   fade/slide-up used when a lesson opens (.lesson-fullscreen's
+   slideUpFade above) — the .active class is toggled purely via
+   display:none/block (see .screen-inner.active), so the animation
+   naturally re-runs from 0% each time this screen is switched to. */
+
+/* ===== GESTURE QUESTION (camera) ===== */
+.gq-stage{position:relative;width:100%;max-width:420px;margin:0 auto;border-radius:var(--radius);overflow:hidden;background:#000;}
+.gq-stage::before{content:'';display:block;padding-top:75%;}
+.gq-stage video,.gq-stage canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);}
+.gq-timer{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;font-weight:800;font-size:13px;padding:5px 10px;border-radius:999px;z-index:2;}
+/* ===== FLASH CARD GAME ===== */
+/* Warm "hot" tint — previously a gradient set directly as
+   #screen-flashcard's own background. That div is a plain block
+   (.screen-inner{display:block}, not a flex/height:100% container),
+   so its height only ever spanned its own content — on the short
+   start view especially, the gradient's darker bottom stop never
+   actually reached the real bottom of the page, it just stopped
+   wherever the content ended and left plain gray below it.
+
+   Moved to a dedicated fixed full-viewport layer instead (same
+   pattern as .fc-fire-wall below, which has the identical problem to
+   solve — content height vs. viewport height — and already solves it
+   this way), so it always spans edge-to-edge regardless of how tall
+   the current sub-view is.
+
+   Per feedback, the screen now runs COLD by default (a calm icy-blue
+   wash, #fc-bg-tint-cold below) rather than plain gray, then a HOT
+   layer (#fc-bg-tint, this one) fades in on top of it as streak climbs
+   — invisible below FLASHCARD_TINT_START, ramping to full strength by
+   FLASHCARD_FIRE_STREAK (the same streak the fire wall appears at).
+   Since the hot layer's colors are fully opaque, its own rising
+   opacity is enough to crossfade it over the cold layer underneath —
+   no separate fade-out logic needed on the cold one. Both driven by
+   updateFlashcardTint(streak) in app.js. */
+#fc-bg-tint-cold{position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(180deg,#EAF7FF 0%,#DCF0FF 55%,#CCE8FF 100%);}
+#fc-bg-tint{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .6s ease;background:linear-gradient(180deg,#FFF6EE 0%,#FFE7D2 55%,#FFDAB8 100%);}
+#screen-flashcard{position:relative;overflow:hidden;}
+#screen-flashcard.active .content-wrap{animation:slideUpFade .3s ease;}
+
+/* Decorative falling letters/emoji behind the content — purely
+   ambient, aria-hidden, never intercepts clicks. Each <span> drifts
+   slowly downward and fades in/out at the ends of its loop (fcDrift),
+   with per-span duration/delay set inline in index.html for variety.
+   (Previously these floated up/down in place; changed to a slow
+   downward fall per feedback.) Color now follows the same cold/hot
+   split as the rest of the screen (see #screen-flashcard.fc-heated
+   below) instead of being hardcoded orange — per feedback the screen
+   still read as "hot" at streak 0 even with the background gradient
+   fixed, because this and the other accent colors below were always
+   warm regardless of streak. */
+.fc-bg-decor{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.fc-bg-decor span{position:absolute;font-size:34px;font-weight:800;color:var(--blue);opacity:0;animation:fcDrift 8s linear infinite;transition:color .6s ease;}
+#screen-flashcard.fc-heated .fc-bg-decor span{color:var(--orange);}
+@keyframes fcDrift{0%{transform:translateY(0);opacity:0;}10%{opacity:.1;}90%{opacity:.1;}100%{transform:translateY(140px);opacity:0;}}
+#screen-flashcard .content-wrap{position:relative;z-index:1;}
+
+/* Start button previously had a glaring diagonal "shine" sweep
+   (::after + fcShine) crossing it on a loop — per feedback this read
+   as glaring/reflective rather than inviting. Swapped for the same
+   glow-pulse language already used on .lesson-node.current (see
+   @keyframes pulse above): a soft ring of the button's own green
+   expanding outward and fading, rather than a moving highlight. */
+.fc-start-btn{animation:fcBtnGlow 2s ease-in-out infinite;}
+@keyframes fcBtnGlow{0%,100%{box-shadow:0 0 0 0 rgba(88,204,2,.45);}50%{box-shadow:0 0 0 12px rgba(88,204,2,0);}}
+
+.fc-best-card{display:flex;align-items:center;gap:14px;background:var(--gold-light);border-radius:var(--radius);padding:18px 20px;animation:popIn .35s ease;}
+.fc-best-icon{font-size:38px;flex-shrink:0;color:#B38000;}
+.fc-best-num{font-size:28px;font-weight:800;color:#B38000;}
+.fc-best-lbl{font-size:13px;color:var(--text-soft);}
+/* HUD row — same 3-stat-box language as .profile-stats/.p-stat, just
+   3 columns instead of 2 (score/streak/xp all matter mid-round). */
+.fc-hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;}
+/* Per feedback these 3 boxes stay plain white regardless of streak —
+   unlike .fc-letter/.fc-bg-decor above, the HUD row isn't part of the
+   cold/hot heat metaphor, so no #screen-flashcard.fc-heated override
+   here (there used to be one swapping this to a warm tint; removed). */
+.fc-hud-item{position:relative;background:var(--white);box-shadow:0 1px 4px rgba(0,0,0,.06);border-radius:var(--radius-sm);padding:12px 6px;text-align:center;transition:transform .15s;}
+.fc-hud-num{font-size:22px;font-weight:800;}
+.fc-hud-lbl{font-size:11px;color:var(--text-soft);margin-top:2px;}
+/* Pulses once (class toggled via JS on every scoring event) — a subtle
+   "same DNA" motion cue as the lesson path's node press/pulse, just
+   scaled down since this fires far more often (every correct round). */
+.fc-hud-item.fc-pulse{animation:fcHudPulse .35s ease;}
+@keyframes fcHudPulse{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* The letter card — rebuilt fresh (innerHTML swap) every round in
+   app.js, so .fc-letter's popIn animation replays automatically on each
+   new letter with no extra JS needed, same trick .lf-question relies on.
+   Previously also had a slowly rotating conic-gradient ring around it
+   (::before + fcRingSpin); removed per feedback — the card now just
+   keeps its plain ambient box-shadow glow. */
+/* Card's ambient glow was hardcoded orange here regardless of streak —
+   same bug class as .fc-letter/.fc-hud-item/.fc-bg-decor two handoffs
+   ago, just missed on this element at the time. Routed through a
+   custom property instead of a flat color so both the base glow and
+   the fcCardCorrect keyframe below (which returns to this glow after
+   its green flash) automatically follow cold/hot without duplicating
+   the swap in two places. */
+#screen-flashcard{--fc-card-glow:rgba(28,176,246,.18);}
+#screen-flashcard.fc-heated{--fc-card-glow:rgba(255,150,0,.18);}
+.fc-card{position:relative;display:flex;align-items:center;justify-content:center;background:var(--white);border-radius:var(--radius);padding:22px;margin-bottom:14px;box-shadow:0 6px 18px var(--fc-card-glow);transition:box-shadow .6s ease;}
+.fc-letter{font-size:64px;font-weight:800;color:var(--blue);animation:fcLetterPop .35s cubic-bezier(.34,1.56,.64,1);transition:color .6s ease;}
+#screen-flashcard.fc-heated .fc-letter{color:var(--orange);}
+/* Sign card (Session 37): the Thai word of the sign to perform; same pop-in and heated colour as the letter */
+.fc-word{font-size:40px;font-weight:800;line-height:1.25;text-align:center;color:var(--blue);animation:fcLetterPop .35s cubic-bezier(.34,1.56,.64,1);transition:color .6s ease;padding:8px 0;}
+#screen-flashcard.fc-heated .fc-word{color:var(--orange);}
+/* What to practise: letters / signs / mix (start view) */
+.fc-pool{margin:18px auto 0;text-align:center;width:100%;}
+.fc-start-col{display:flex;flex-direction:column;align-items:center;width:100%;}
+.fc-start-col .fc-start-btn{margin:20px 0 0 !important;}
+.fc-pool-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:max-content;max-width:100%;margin:0 auto;}   /* 3 equal tabs: the middle one sits exactly over the start button */
+.fc-pool-btn{border:2px solid var(--border-dark);background:var(--white);color:var(--text);font-family:inherit;font-weight:800;font-size:14px;padding:9px 12px;white-space:nowrap;text-align:center;border-radius:999px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+.fc-pool-btn.on{background:var(--white);border-color:var(--blue);color:var(--blue);}   /* selected = outlined, not filled */
+.fc-pool-btn:disabled{opacity:.45;cursor:not-allowed;}
+.fc-pool-note{margin:10px auto 0;font-size:12.5px;color:var(--text-soft);line-height:1.5;width:100%;max-width:none;text-wrap:balance;}   /* full container width, balanced lines: no lonely word on the 2nd line */
+@keyframes fcLetterPop{0%{transform:scale(.4) rotate(-10deg);opacity:0;}70%{transform:scale(1.1) rotate(3deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+/* One-off green flash on the card the instant a round is answered
+   correctly — separate from the letter's own pop-in since this needs
+   to replay on the CURRENT (about-to-change) card, not the next one.
+   Kept green (not warm-tinted) on purpose — it's a correctness signal,
+   distinct from the page's ambient warm theme. */
+.fc-card.fc-card-correct{animation:fcCardCorrect .5s ease;}
+@keyframes fcCardCorrect{0%{box-shadow:0 6px 18px rgba(88,204,2,.55);}100%{box-shadow:0 6px 18px var(--fc-card-glow);}}
+
+/* Combo popup — previously an in-flow badge sitting between the card
+   and the camera stage; every time it appeared/disappeared it changed
+   layout height and visibly nudged the camera stage down/up. Fixed by
+   going absolute — that part's unchanged. What moved is WHERE it's
+   absolute to: it used to float above the letter card, disconnected
+   from the streak count it's actually reporting on; per feedback it
+   now lives inside the streak HUD item itself (.fc-hud-item, given
+   position:relative above) and starts centered exactly on top of that
+   number before drifting up, so it visibly pops out of the streak's
+   own card rather than an unrelated one. That HUD item is static
+   markup that's never rebuilt (only #fc-card's innerHTML gets replaced
+   each round), so the badge node is safe living there permanently —
+   see index.html. Still hidden until streak 3+ / color-steps at
+   3/5/10 (see FLASHCARD_STREAK_TIERS in app.js) but pops in AND fades
+   back out entirely on its own via one animation, replayed on every
+   streak increase (not just tier crossings) by removing/re-adding
+   .fc-pop — same remove/reflow/re-add trick already used for
+   .fc-card-correct/.fc-hud-item.fc-pulse elsewhere in this file. */
+.fc-streak-badge{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(.3);
+  white-space:nowrap;pointer-events:none;z-index:5;
+  display:inline-flex;align-items:center;gap:6px;justify-content:center;
+  font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;
+  opacity:0;
+}
+.fc-streak-badge.fc-pop{animation:fcComboPop 1.5s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes fcComboPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.3);}
+  18%{opacity:1;transform:translate(-50%,-95%) scale(1.15);}
+  30%{transform:translate(-50%,-88%) scale(1);}
+  55%{opacity:1;transform:translate(-50%,-88%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-170%) scale(.85);}
+}
+.fc-badge-flame{width:14px;height:14px;fill:currentColor;flex-shrink:0;}
+.fc-streak-badge.fc-streak-bronze{background:#FFE9D6;color:#B75E00;}
+.fc-streak-badge.fc-streak-silver{background:#E8EDF3;color:#5A6B7D;}
+.fc-streak-badge.fc-streak-gold{background:var(--gold-light);color:#B38000;}
+
+/* Round timer — same pill as lesson gesture questions (.gq-timer), plus
+   an escalating pulse once time is running low (<=3s, toggled via JS). */
+.fc-timer.fc-timer-low{background:rgba(255,75,75,.9);animation:fcTimerLow .5s ease-in-out infinite;}
+@keyframes fcTimerLow{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+
+/* Confetti burst — only injected into the DOM on a new best score (see
+   loseFlashcardGame()/flashcardConfettiHtml()). Each piece falls from
+   above the result card, drifting sideways by its own random --fc-drift
+   and spinning/fading out, purely via CSS so no animation-frame JS loop
+   is needed for cleanup — the whole burst is discarded next time
+   #fc-result-view's innerHTML is replaced. */
+#fc-result-view .lf-result-wrap{position:relative;overflow:visible;}
+.fc-confetti{position:absolute;top:-10px;left:0;right:0;height:0;pointer-events:none;}
+.fc-confetti-piece{position:absolute;top:0;font-size:22px;opacity:0;animation-name:fcConfettiFall;animation-timing-function:ease-in;animation-fill-mode:forwards;}
+@keyframes fcConfettiFall{
+  0%{transform:translate(0,-20px) rotate(0deg);opacity:0;}
+  15%{opacity:1;}
+  100%{transform:translate(var(--fc-drift),260px) rotate(360deg);opacity:0;}
+}
+
+/* "On fire" wall — appears once a run's streak passes 50 (see
+   updateFlashcardFireWall() in app.js, called from resolveFlashcardRound).
+   Fixed to the true bottom of the viewport (not just the flash card
+   screen) so it reads as the whole page catching fire, not just the
+   card. Sits below .bottom-nav's z-index:50 so the mobile nav bar
+   still renders on top of it instead of being covered. Hidden by
+   default (opacity 0 + slid down out of view) and toggled via the
+   .show class; pointer-events:none throughout since it's decoration. */
+.fc-fire-wall{position:fixed;left:0;right:0;bottom:0;height:108px;display:flex;justify-content:space-evenly;align-items:flex-end;pointer-events:none;z-index:40;opacity:0;transform:translateY(100%);transition:opacity .5s ease,transform .5s ease;overflow:visible;}
+.fc-fire-wall.show{opacity:1;transform:translateY(0);}
+/* Warm glow bleeding upward off the top of the wall into the page
+   above it, well past the wall's own height (inset's negative top),
+   so the "on fire" feeling reads even before the eye reaches the
+   flames themselves. Blurred for a soft, radiant edge rather than a
+   hard gradient band. Per feedback this should also grow from small
+   to full size alongside the flames below (see --fc-fire-scale,
+   driven from updateFlashcardFireWall() in app.js) rather than
+   appearing at full strength the instant the wall shows — scaled from
+   the bottom edge so it visibly climbs the page as streak rises. */
+.fc-fire-wall::before{content:'';position:absolute;left:0;right:0;bottom:0;top:-56px;background:linear-gradient(0deg,rgba(255,70,0,.55) 0%,rgba(255,120,0,.22) 55%,rgba(255,150,0,0) 100%);filter:blur(3px);pointer-events:none;transform:scaleY(var(--fc-fire-scale,1));transform-origin:bottom;transition:transform .4s ease;}
+/* Bright ember-glow strip that used to hug the base of the wall here
+   (.fc-fire-wall::after) — this was the "white bar" from the last two
+   handoffs. First attempt removed mix-blend-mode:screen (the actual
+   compositing bug) but it was still reading as an unwanted pale strip
+   at the wall's base, so per feedback it's removed outright rather
+   than continuing to tune its color. The ::before glow bleed above and
+   the flame icons/embers below still carry the "on fire" read on their
+   own. */
+/* Default here matches the scale updateFlashcardFireWall() sets in JS
+   the instant the wall first shows at FLASHCARD_FIRE_STREAK, so there's
+   no flash of full-size-then-shrink before the first JS update lands. */
+.fc-fire-wall{--fc-fire-scale:.6;}
+/* Orange flame swapped to yellow per feedback — easier to pick out
+   against the wall's own warm-orange glow/background than another
+   shade of orange was. Red alternate used to be nth-child(odd); now an
+   explicit .fc-flame-red class instead (see next comment for why). */
+.fc-fire-wall .fc-flame{position:relative;color:#FFDD00;animation:fcFlameFlicker 1s ease-in-out infinite;transform-origin:bottom center;filter:drop-shadow(0 0 7px rgba(255,221,0,.75));}
+.fc-fire-wall .fc-flame.fc-flame-red{color:var(--red);filter:drop-shadow(0 0 7px rgba(255,50,0,.8));}
+/* Varied heights per flame so the row reads as an organic wall rather
+   than a uniform strip of identical icons — folded into the flicker
+   keyframes via a custom property (see fcFlameFlicker) rather than a
+   plain static transform, since the animation already drives
+   `transform` on every frame and would otherwise just overwrite it.
+   Each flame's per-flame height (--fc-fs) is combined with the shared
+   wall-wide growth factor (--fc-fire-scale) inside the keyframe below
+   via calc(), so "some flames are taller than others" and "the whole
+   wall grows with streak" stack instead of one overriding the other.
+   Used to be set via :nth-child(3n)/(3n+1)/(3n+2) here, which relied on
+   the front flames' positions among ALL of .fc-fire-wall's children.
+   Now that front and back flames are interleaved as siblings in the
+   same row (see the HANDOFF/index.html comment above the markup for
+   why), that count no longer lines up with "every 3rd front flame", so
+   --fc-fs is set inline per span in index.html instead — same varied
+   values as before, just no longer nth-child-derived. */
+/* Swapped from the ti-flame webfont glyph (outline-only, thin/bland at
+   this size) to this inline SVG using Tabler's own "filled" flame path
+   — the webfont build loaded here (@tabler/icons-webfont 2.44.0) never
+   shipped filled glyphs, only outline, so an inline SVG was the only
+   way to get a solid look without swapping the whole icon font. fill
+   picks up `color` from .fc-flame above exactly like the old font icon
+   did via currentColor. */
+.fc-fire-wall .fc-flame svg{display:block;width:44px;height:44px;fill:currentColor;}
+@keyframes fcFlameFlicker{0%,100%{transform:scale(calc(var(--fc-fs,1) * var(--fc-fire-scale,1))) scaleY(1) scaleX(1);opacity:.85;}50%{transform:scale(calc(var(--fc-fs,1) * var(--fc-fire-scale,1))) scaleY(1.18) scaleX(.92);opacity:1;}}
+/* Embers drifting up off the wall, independent of the flame icons —
+   plain radial-gradient dots so no extra markup/assets are needed
+   beyond the handful of positioned spans in index.html. */
+.fc-fire-wall .fc-ember{position:absolute;bottom:14px;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle,#FFE9B8 0%,rgba(255,140,0,.6) 55%,rgba(255,140,0,0) 100%);animation:fcEmberRise 2.6s ease-in infinite;}
+@keyframes fcEmberRise{0%{transform:translateY(0) scale(1);opacity:.9;}75%{opacity:.5;}100%{transform:translateY(-72px) scale(.25);opacity:0;}}
+/* Back flame layer — gives the wall depth by putting a second, more
+   distant-reading row of flames behind the original one.
+   REWORKED per feedback that back flames still landed directly behind/
+   overlapping a front one: this used to be a separately absolutely-
+   positioned overlay (.fc-fire-back wrapper div + left:% per span)
+   sitting on top of the flex front row, with the two rows' positions
+   computed independently — any drift between that math and the front
+   row's actual flex-computed centers could put a back flame right
+   under a front one, which is exactly what was happening. Now
+   .fc-flame-back is a plain flex child of .fc-fire-wall, interleaved
+   with .fc-flame in index.html (front,back,front,back,...,front).
+   Flexbox's own space-evenly layout gives every item — front or back —
+   its own slot, so a back flame structurally cannot land on top of a
+   front one at any viewport width; no more hand-tuned percentages to
+   keep in sync between two rows, no .fc-fire-back wrapper needed, and
+   the position:absolute + left:% + bottom offset are gone.
+   It still reads as "behind" the front row despite being a normal
+   sibling, not a lower layer — that comes entirely from being visibly
+   smaller-impact than the front row (bigger, blurred, and importantly
+   lighter/hazier per feedback that the previous dark red-brown tone
+   read as too heavy: #A82B0E, then #E8622E, is now a pale warm peach
+   #FF9466 at higher opacity (.28 -> .35, since a lighter color at the
+   old low opacity nearly vanished against the wall's own warm
+   background) with a touch more blur (1.5px -> 2px) for a hazier,
+   further-away look — plus its slower per-flame flicker (see
+   animation-duration on each span in index.html) so back and front
+   don't flicker in lockstep, which used to read as one row double-
+   rendered rather than two separate depths. */
+.fc-fire-wall .fc-flame-back{position:relative;color:#FF9466;opacity:.35;filter:blur(2px) drop-shadow(0 0 12px rgba(255,140,60,.35));animation:fcFlameFlicker 1.4s ease-in-out infinite;transform-origin:bottom center;}
+.fc-fire-wall .fc-flame-back svg{display:block;width:64px;height:64px;fill:currentColor;}
+
+.gq-status{text-align:center;color:var(--text-soft);font-size:14px;margin-top:14px;min-height:20px;}
+.gq-prog{display:flex;justify-content:center;gap:8px;margin-top:10px;min-height:12px;}
+.gq-dot{width:12px;height:12px;border-radius:50%;background:var(--border,#E5E5E5);transition:background .2s,transform .2s;}
+.gq-dot.cur{background:var(--blue,#1CB0F6);transform:scale(1.25);}
+.gq-dot.done{background:var(--green,#58CC02);}
+
+/* Capture indicator (Session 37, replaces the old translator's hold bar): in TEST, BONUS and FLASHCARD camera nodes there are
+   no text hints, only this bar. It fills while the pose is being held (green); gold + pulse = start pose recognised,
+   now do the movement (motion signs, J, Z). Says nothing about HOW or WHERE to do the sign. */
+.gq-status.nohint:empty{display:none;}   /* test / bonus / flashcard: no text, so the bar sits right under the camera */
+.gq-status.nohint+.cap{margin-top:10px;}
+.cap{margin-top:12px;}
+.cap-track{width:100%;max-width:420px;margin:0 auto;height:10px;background:var(--border);border-radius:999px;overflow:hidden;}
+.cap-fill{height:100%;width:0%;background:var(--green);border-radius:999px;transition:width .08s linear;}
+.cap-fill.ready{background:var(--gold);animation:capReadyPulse 1.1s ease-in-out infinite;}
+.cap-fill.flash{background:var(--green);box-shadow:0 0 0 4px rgba(88,204,2,.35);}
+.cap-fill.done{background:#2E7D00;box-shadow:none;}   /* one step (pose) of a multi-step sign captured: dark green = go to the next step; the final pose ends in normal green */
+@keyframes capReadyPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,184,0,.45)}50%{box-shadow:0 0 0 5px rgba(255,184,0,0)}}
+
+/* ===== MODALS ===== */
+/* Subtle backdrop fade-in — pairs with .confirm-box's popIn below so
+   EVERY confirmation dialog in the app (logout / reset-progress /
+   delete-account, all three share this markup+class) gets the same
+   "pop out" entrance motion, not just one of them. */
+@keyframes modalBackFade{from{opacity:0}to{opacity:1}}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px;animation:modalBackFade .15s ease both;}
+.modal-box{background:white;border-radius:var(--radius);padding:24px;width:100%;max-width:380px;}
+.modal-box h3{font-size:18px;font-weight:800;margin-bottom:6px;}
+.q-sub{font-size:14px;color:var(--text-soft);margin-bottom:18px;}
+.modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;}
+.btn-close{padding:10px 20px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-close:hover{background:var(--bg);}
+/* popIn is the same keyframe already used for lb-row/redo-pill pop-ins
+   elsewhere in this file (see @keyframes popIn near the top) — reused
+   here rather than defining a near-duplicate. */
+.confirm-box{background:white;border-radius:var(--radius);padding:28px 24px;width:100%;max-width:340px;text-align:center;animation:popIn .22s cubic-bezier(.34,1.56,.64,1) both;}
+.confirm-box h3{font-size:17px;font-weight:800;margin-bottom:8px;}
+.confirm-box p{font-size:14px;color:var(--text-soft);margin-bottom:22px;line-height:1.5;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-btns button{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid var(--border);}
+.btn-cancel{background:var(--white);color:var(--text);}
+.btn-cancel:hover{background:var(--bg);}
+.btn-confirm-red{background:var(--red);color:white;border-color:var(--red);}
+.btn-confirm-red:hover{background:#e03333;}
+
+/* Achievement unlock toast (#achievement-popup, filled in by
+   showNextAchievementPopup() in app.js) — Steam-style: bottom-right
+   corner, icon-left/text-right layout, doesn't block or dim the rest
+   of the page. The wrap itself has no background/size — it's just an
+   anchor point pinned to the corner; pointer-events:none on it (so it
+   never eats clicks on whatever's underneath when empty) with
+   pointer-events:auto put back on the actual .ach-toast card. White
+   card + border (same recipe as .confirm-box/.ach-card elsewhere)
+   rather than Steam's actual dark theme, to match the rest of this
+   app's light UI — the border is what keeps it visible against a
+   white/near-white page background now that there's no dark backdrop
+   giving it contrast for free.
+   Kept to the same "subtle" motion budget as the rest of the app: a
+   short slide-in-from-the-right/fade on entry (achToastIn), and an
+   explicit slide-out-to-the-right/fade on dismiss (achToastOut, given
+   200ms to play — see dismissAchievementPopup() — before the DOM swap
+   to the next queued achievement actually happens) rather than either
+   popping in aggressively or just cutting instantly on exit. */
+.ach-toast-wrap{position:fixed;right:18px;bottom:18px;z-index:150;pointer-events:none;display:flex;justify-content:flex-end;}
+@keyframes achToastIn{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes achToastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(24px);opacity:0}}
+.ach-toast{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:12px;background:var(--white);color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;width:300px;max-width:calc(100vw - 36px);box-shadow:0 10px 28px rgba(0,0,0,.14);animation:achToastIn .3s cubic-bezier(.2,.8,.3,1) both;}
+.ach-toast.ach-toast-leave{animation:achToastOut .2s ease both;}
+.ach-toast-icon{width:44px;height:44px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--green-dark);flex-shrink:0;}
+.ach-toast-body{min-width:0;}
+.ach-toast-kicker{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--green-dark);margin-bottom:2px;}
+.ach-toast-title{font-size:14px;font-weight:800;line-height:1.3;color:var(--text);}
+.ach-toast-desc{font-size:11.5px;color:var(--text-soft);margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* Toast */
+.toast-msg{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#222;color:white;padding:11px 24px;border-radius:999px;font-size:14px;font-weight:600;z-index:200;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;}
+.toast-msg.show{opacity:1;}
+
+/* ===== BOTTOM NAV (mobile) ===== */
+.bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--white);border-top:1.5px solid var(--border);
+  padding:8px 0 env(safe-area-inset-bottom,8px);
+  z-index:50;
+}
+.bottom-nav-inner{display:flex;justify-content:space-around;}
+.bnav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  border:none;background:none;cursor:pointer;padding:6px 12px;
+  font-size:10px;font-weight:700;color:var(--text-soft);font-family:inherit;
+  border-radius:var(--radius-sm);transition:.15s;flex:1;
+}
+.bnav-btn i{font-size:22px;}
+.bnav-btn.active{color:var(--green);}
+
+/* ===== GUEST CTA POPUP =====
+   Fixed to the viewport (not the scrolling .main-area), so it stays
+   in place while the lesson path scrolls — position:fixed rather
+   than absolute is what makes that free. Only shown to guests on the
+   learn screen; toggled in app.js.
+   Aligned to sit directly above the sidebar's profile row (.s-foot):
+   left:12px + width:236px matches the sidebar's own content band
+   (260px sidebar − 12px padding each side), and bottom:90px clears
+   .s-foot's own height (~61.5px: 12px+12px padding + 1.5px border +
+   36px avatar row) plus the sidebar's 20px bottom padding, with a
+   small gap on top of that.
+   Desktop keeps the original icon-less, text-only layout (column,
+   left-aligned). On phone layout (see @media below) it switches to a
+   row with a green lock icon on the left — see .guest-cta-icon. */
+.guest-cta{
+  position:fixed;left:12px;bottom:90px;width:236px;z-index:50;
+  background:var(--white);border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:0 10px 28px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  padding:16px 18px;display:flex;flex-direction:column;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+  animation:slideUpFade .35s ease;
+}
+.guest-cta:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.05);}
+/* Lock icon — desktop keeps the original icon-less, text-only card
+   (hidden here); only shown on phone layout, see the @media block
+   below where guest-cta switches to a row layout for it. */
+.guest-cta-icon{
+  display:none;
+  flex-shrink:0;
+  width:38px;height:38px;
+  border-radius:50%;
+  background:transparent;
+  border:1.5px solid var(--green);
+  color:var(--green);
+  align-items:center;justify-content:center;
+  font-size:18px;
+}
+.guest-cta-text{display:flex;flex-direction:column;gap:3px;}
+.guest-cta-text strong{font-size:13.5px;font-weight:800;color:var(--text);line-height:1.35;}
+.guest-cta-text span{font-size:12px;color:var(--text-soft);line-height:1.4;}
+
+/* ===== CUSTOM SCROLLBAR =====
+   Applied to the scrollable panes in the app (.main-area, the
+   fullscreen-lesson body) plus a
+   sensible fallback for any other overflow:auto/scroll element.
+   Firefox uses the two-value `scrollbar-color`/`scrollbar-width`
+   props; everything else (Chrome/Edge/Safari) uses the ::-webkit-*
+   pseudo-elements. Both are needed — neither engine reads the other's
+   syntax. */
+*{
+  scrollbar-width:thin;
+  scrollbar-color:var(--border-dark) transparent;
+}
+.main-area::-webkit-scrollbar,
+#lf-body::-webkit-scrollbar{
+  width:8px;
+}
+.main-area::-webkit-scrollbar-track,
+#lf-body::-webkit-scrollbar-track{
+  background:transparent;
+}
+.main-area::-webkit-scrollbar-thumb,
+#lf-body::-webkit-scrollbar-thumb{
+  background:var(--border-dark);
+  border-radius:999px;
+}
+.main-area:hover::-webkit-scrollbar-thumb,
+#lf-body:hover::-webkit-scrollbar-thumb{
+  background:var(--green);
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .bottom-nav{display:block;}
+  .content-wrap{padding:20px 16px 90px;}
+  .ach-grid{grid-template-columns:repeat(2,1fr);}
+  .profile-actions{flex-direction:column;}
+  .btn-save,.btn-logout{justify-content:center;}
+  .quest-hero{flex-direction:column;align-items:flex-start;}
+  .trophy-icon{display:none;}
+  .guest-cta{
+    top:calc(12px + env(safe-area-inset-top,0px));left:12px;right:12px;bottom:auto;
+    width:auto;max-width:none;padding:14px 18px;
+    flex-direction:row;align-items:center;gap:12px;
+  }
+  .guest-cta-icon{display:flex;}
+  .guest-cta-text strong{font-size:14px;}
+  .guest-cta-text span{font-size:12.5px;}
+  /* Bottom nav (.bottom-nav) only exists on this breakpoint down —
+     without this the toast would sit half-hidden underneath it. Wrap
+     spans edge-to-edge (minus margins) here so the card can stretch
+     to a comfortable width instead of the fixed 300px used on desktop. */
+  .ach-toast-wrap{left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));}
+  .ach-toast{width:100%;max-width:none;}
+}
+@media(max-width:480px){
+  .auth-box{padding:28px 26px;}
+  .ach-grid{grid-template-columns:1fr 1fr;}
+  .social-btns{flex-direction:column;}
+  .lb-row{padding:10px 12px;gap:8px;}
+}
+
+
+/* ===== COURSE CARD (top-right of the lesson path; see renderCourseCard() in app.js) ===== */
+.course-card-wrap{position:sticky;top:10px;z-index:60;height:0;display:flex;justify-content:flex-end;padding-right:12px;pointer-events:none;}
+.course-card{position:relative;pointer-events:auto;align-self:flex-start;}
+.cc-pill{display:flex;align-items:center;gap:6px;max-width:210px;padding:7px 12px;border-radius:999px;border:2px solid var(--border-dark,#D8D8D8);background:var(--white,#fff);font:inherit;font-size:12px;font-weight:800;color:var(--text);cursor:pointer;box-shadow:0 2px 0 var(--border-dark,#D8D8D8);}
+.cc-pill i{font-size:16px;}
+.cc-pill-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cc-pill-pct{color:var(--text-soft,#9B9B9B);}
+.cc-list{display:none;position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));flex-direction:column;gap:6px;padding:10px;border-radius:16px;border:2px solid var(--border-dark,#D8D8D8);background:var(--white,#fff);box-shadow:0 6px 18px rgba(0,0,0,.12);}
+.course-card.open .cc-list{display:flex;}
+.cc-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:2px solid transparent;background:transparent;font:inherit;text-align:left;color:var(--text);cursor:pointer;}
+.cc-item:hover{background:var(--blue-light,#EAF4FF);}
+.cc-item.current{border-color:var(--blue,#1CB0F6);background:var(--blue-light,#EAF4FF);}
+.cc-item>i{font-size:20px;}
+.cc-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.cc-item-title{font-size:13px;font-weight:800;}
+.cc-bar{display:block;height:6px;border-radius:3px;background:var(--border,#E5E5E5);overflow:hidden;}
+.cc-bar-fill{display:block;height:100%;background:var(--blue,#1CB0F6);}
+.cc-item-pct{font-size:11px;font-weight:700;color:var(--text-soft,#9B9B9B);}
+
+/* Frame sequences (start -> middle -> end) for emotion/word signs */
+.lf-seq{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;max-width:100%;margin:14px 0 28px;}
+.lf-seq .lf-q-image{height:clamp(96px,16vh,150px);width:31%;max-width:31%;min-width:0;flex:0 1 31%;aspect-ratio:auto;margin:0;} /* same width for 1, 2 or 3 frames */
+/* sign pictures sit on white (please / sorry are transparent GIFs); camera nodes no longer show pictures */
+.lf-q-image.lf-q-sign,.lf-seq .lf-q-image{background:#fff;}
+.lf-seq-arrow{color:var(--text-soft,#9B9B9B);font-size:16px;flex:none;}
+.lf-info-sign{grid-column:1/-1;}
+@media(max-width:768px){body.guest-cta-on .course-card-wrap{top:calc(96px + env(safe-area-inset-top,0px));}}
+
+.gq-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto;max-width:360px;padding:16px;border-radius:16px;border:2px dashed var(--border-dark,#D8D8D8);background:var(--bg,#F7F7F7);color:var(--text-soft,#9B9B9B);font-size:13px;font-weight:700;text-align:center;}
+.gq-placeholder i{font-size:28px;}
+.lf-info-card .lf-seq{margin:0 0 8px;width:100%;min-width:260px;max-width:420px;}
+
+/* Session 38: leaderboard categories (letters / signs / all) under the XP / score tabs */
+.lb-cats{display:flex;gap:8px;justify-content:center;margin:-8px 0 18px;}
+.lb-cat{border:2px solid var(--border-dark);background:var(--white);color:var(--text-soft);font-family:inherit;font-weight:800;font-size:13px;padding:7px 16px;border-radius:999px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+.lb-cat.active{border-color:var(--blue);color:var(--blue);}
